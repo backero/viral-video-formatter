@@ -1,0 +1,143 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  *, *::before, *::after { box-sizing: border-box; }
+
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    background-color: #0d0d0d;
+    color: #e8e8e8;
+    min-height: 100vh;
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar            { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track      { background: #161616; }
+  ::-webkit-scrollbar-thumb      { background: #2e2e2e; border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover{ background: #444; }
+
+  /* Native date/time/color-scheme */
+  input[type="date"],
+  input[type="time"],
+  input[type="datetime-local"] {
+    color-scheme: dark;
+  }
+
+  select option {
+    background-color: #252525;
+    color: #e8e8e8;
+  }
+}
+
+@layer components {
+  /* ── Inputs ───────────────────────────────── */
+  .fi {
+    @apply w-full bg-raised border border-wire rounded-lg text-body
+           text-[15px] px-3.5 py-[10px] outline-none
+           transition-all duration-150 placeholder:text-ghost
+           focus:border-accent focus:ring-2 focus:ring-accent/20;
+  }
+
+  textarea.fi {
+    @apply resize-y min-h-[80px] leading-relaxed;
+  }
+
+  .fi-err {
+    @apply border-bad ring-2 ring-bad/10;
+  }
+
+  /* Select with custom chevron */
+  .fi-select {
+    @apply fi cursor-pointer appearance-none pr-9;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23888' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+  }
+
+  /* ── Buttons ──────────────────────────────── */
+  .btn {
+    @apply inline-flex items-center gap-2 px-6 py-[11px] rounded-lg
+           text-[15px] font-medium transition-all duration-150
+           cursor-pointer border-none outline-none select-none;
+  }
+  .btn-primary {
+    @apply btn bg-accent text-white
+           hover:bg-accent-dark hover:-translate-y-px active:translate-y-0;
+  }
+  .btn-ghost {
+    @apply btn bg-transparent text-dim border border-wire
+           hover:text-body hover:border-wire-hi;
+  }
+
+  /* ── Labels / hints / errors ──────────────── */
+  .fl { @apply text-[13px] font-semibold text-body uppercase tracking-wide; }
+  .fh { @apply text-[13px] text-dim -mt-1; }
+  .fe { @apply text-[13px] text-bad; }
+
+  /* ── Checkbox / Radio cards ───────────────── */
+  .check-card {
+    @apply flex items-start gap-2.5 px-3 py-2 rounded-lg cursor-pointer
+           transition-all duration-150 border border-transparent
+           hover:bg-lifted;
+  }
+  .check-card.on  { @apply bg-accent-glow border-accent; }
+  .check-card input { @apply w-[18px] h-[18px] min-w-[18px] accent-accent cursor-pointer mt-px; }
+  .check-card span  { @apply cursor-pointer leading-snug text-[15px] text-body; }
+
+  /* ── Hook option cards ────────────────────── */
+  .hook-card {
+    @apply flex items-start gap-3.5 p-3.5 border border-wire rounded-lg
+           cursor-pointer transition-all duration-150 bg-raised
+           hover:border-wire-hi hover:bg-lifted;
+  }
+  .hook-card.on { @apply border-accent bg-accent-glow; }
+  .hook-card input[type="radio"] {
+    @apply w-[18px] h-[18px] min-w-[18px] accent-accent cursor-pointer mt-0.5;
+  }
+
+  /* ── Template / info cards ────────────────── */
+  .tmpl-card   { @apply bg-raised border border-wire rounded-xl overflow-hidden; }
+  .tmpl-header {
+    @apply bg-lifted px-5 py-3 font-semibold text-[13px] text-accent
+           uppercase tracking-widest border-b border-wire;
+  }
+
+  .info-box { @apply bg-raised border border-wire rounded-xl p-5; }
+  .info-box-accent { @apply info-box border-accent bg-accent-glow; }
+
+  /* ── Fluff table ──────────────────────────── */
+  .fluff-table { @apply w-full border-collapse text-[14px]; }
+  .fluff-table th {
+    @apply bg-lifted text-dim font-semibold uppercase tracking-wider
+           text-[12px] px-4 py-2.5 text-left border-b border-wire;
+  }
+  .fluff-table td { @apply px-4 py-2.5 border-b border-wire text-body align-top leading-snug; }
+  .fluff-table tr:last-child td { @apply border-b-0; }
+
+  /* ── File drop ────────────────────────────── */
+  .file-drop {
+    @apply border-2 border-dashed border-wire rounded-xl p-8 text-center
+           cursor-pointer transition-all duration-150
+           hover:border-accent hover:bg-accent-glow;
+  }
+
+  /* ── Tier badges ──────────────────────────── */
+  .tier-badge { @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold tracking-wider uppercase; }
+  .tier-s { @apply bg-ok/15 text-ok; }
+  .tier-a { @apply bg-blue-500/15 text-blue-400; }
+  .tier-b { @apply bg-caution/15 text-caution; }
+  .tier-f { @apply bg-bad/15 text-bad; }
+
+  /* ── Page entrance animation ──────────────── */
+  .pg { animation: pgIn .2s ease; }
+  @keyframes pgIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+}
