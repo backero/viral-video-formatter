@@ -5,6 +5,13 @@ import { supabase } from "./supabase";
  * Returns the new session UUID string, or null on error.
  */
 export async function createSession(data, currentPage = 1) {
+  // Ensure the data has a slug and title
+  if (!data.slug) {
+    const defaultTitle = "Untitled Form";
+    data.formTitle = defaultTitle;
+    data.slug = defaultTitle.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+  }
+
   const { data: row, error } = await supabase
     .from("form_sessions")
     .insert({ data, current_page: currentPage })
@@ -28,7 +35,7 @@ export async function createSession(data, currentPage = 1) {
 export async function updateSession(
   id,
   data,
-  currentPage,
+  currentPage = 1,
   isSubmitted = false,
 ) {
   const { error } = await supabase
@@ -48,18 +55,50 @@ export async function updateSession(
 
 /**
  * Loads a session by its UUID.
- * Returns { data, current_page, is_submitted } or null if not found.
  */
 export async function loadSession(id) {
   const { data: row, error } = await supabase
     .from("form_sessions")
-    .select("data, current_page, is_submitted")
+    .select("id, data, current_page, is_submitted")
     .eq("id", id)
     .single();
 
   if (error) {
-    console.error("[sessionService] loadSession error:", error.message);
     return null;
   }
   return row;
+}
+
+/**
+ * Loads a session by its slug (stored in JSON).
+ */
+export async function loadSessionBySlug(slug) {
+  const { data: rows, error } = await supabase
+    .from("form_sessions")
+    .select("id, data, current_page, is_submitted")
+    .eq("data->>slug", slug)
+    .order("updated_at", { ascending: false })
+    .limit(1);
+
+  if (error || !rows || rows.length === 0) {
+    return null;
+  }
+  return rows[0];
+}
+
+/**
+ * Lists the 50 most recent sessions (for the dashboard).
+ */
+export async function listSessions() {
+  const { data: rows, error } = await supabase
+    .from("form_sessions")
+    .select("id, data, current_page, is_submitted, updated_at")
+    .order("updated_at", { ascending: false })
+    .limit(50);
+
+  if (error) {
+    console.error("[sessionService] listSessions error:", error.message);
+    return [];
+  }
+  return rows;
 }

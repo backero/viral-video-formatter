@@ -472,10 +472,10 @@ function buildDocDef(data) {
 // ── Public API ─────────────────────────────────────────────────────────────
 export function generatePDF(data) {
   // pdfMake and its VFS are statically imported + wired at the top of this module
-  const company = (data.company || "VVF").toUpperCase().replace(/\s+/g, "_");
+  const titleStr = (data.formTitle || "Unnamed Form").replace(/\s+/g, "_");
   const creator = data.creatorFirst ? `_${data.creatorFirst}` : "";
   const dated = data.startDate ? `_${data.startDate}` : "";
-  const filename = `Viral_Video_Formatter_${company}${creator}${dated}.pdf`;
+  const filename = `${titleStr}${creator}${dated}.pdf`;
 
   pdfMake.createPdf(buildDocDef(data)).download(filename);
 }
