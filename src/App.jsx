@@ -1,9 +1,14 @@
-import { useState } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { PAGES, TIER_KEY } from "./constants/formData";
 import ProgressBar from "./components/ProgressBar";
 import FormNavigation from "./components/FormNavigation";
 import ReviewEdit from "./components/ReviewEdit";
 import { generatePDF } from "./utils/generatePDF";
+import {
+  createSession,
+  loadSession,
+  updateSession,
+} from "./lib/sessionService";
 
 import Page01_Details from "./pages/Page01_Details";
 import Page02_NicheTopic from "./pages/Page02_NicheTopic";
@@ -16,7 +21,15 @@ import Page08_CTA from "./pages/Page08_CTA";
 import Page09_PreCamera from "./pages/Page09_PreCamera";
 import Page10_Editor from "./pages/Page10_Editor";
 import Page11_FinalOut from "./pages/Page11_FinalOut";
-import { Play, FileDown, ClipboardCheck, ChevronRight } from "lucide-react";
+import {
+  Play,
+  FileDown,
+  ClipboardCheck,
+  ChevronRight,
+  Link2,
+  Check,
+  Loader2,
+} from "lucide-react";
 
 const INITIAL_DATA = {
   // Page 1
@@ -123,6 +136,23 @@ const PAGE_COMPONENTS = [
 const TOTAL_PAGES = PAGES.length; // 11
 const REVIEW_PAGE = PAGES.length + 1; // 12
 
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+/** Read ?session=<id> from the current URL */
+function getSessionIdFromUrl() {
+  const params = new URLSearchParams(window.location.search);
+  return params.get("session") || null;
+}
+
+/** Push ?session=<id> into the URL without reloading */
+function setSessionIdInUrl(id) {
+  const url = new URL(window.location.href);
+  url.searchParams.set("session", id);
+  window.history.replaceState({}, "", url.toString());
+}
+
+// ── Component ─────────────────────────────────────────────────────────────────
+
 export default function App() {
   const [current, setCurrent] = useState(1);
   const [data, setData] = useState(INITIAL_DATA);
@@ -131,11 +161,87 @@ export default function App() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
 
+  // Session / DB state
+  const [sessionId, setSessionId] = useState(null);
+  const [sessionLoading, setSessionLoading] = useState(true); // true while loading existing session
+  const [isSaving, setIsSaving] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
+  const [saveError, setSaveError] = useState(false);
+
+  // Debounce timer ref
+  const saveTimerRef = useRef(null);
+
   // Whether we're on the review page (current === REVIEW_PAGE)
   const isReviewPage = current === REVIEW_PAGE;
 
+  // ── Session Init (on mount) ─────────────────────────────────────────────
+  useEffect(() => {
+    async function initSession() {
+      setSessionLoading(true);
+      const urlSessionId = getSessionIdFromUrl();
+
+      if (urlSessionId) {
+        // Attempt to resume from existing session
+        const session = await loadSession(urlSessionId);
+        if (session) {
+          setData((prev) => ({ ...prev, ...session.data }));
+          // Restore page — but cap to TOTAL_PAGES; don't auto-land on fake review page
+          const page = Math.min(
+            Math.max(session.current_page || 1, 1),
+            TOTAL_PAGES,
+          );
+          setCurrent(page);
+          setSubmitted(session.is_submitted || false);
+          setSessionId(urlSessionId);
+        } else {
+          // Session ID in URL but not found → start fresh
+          const newId = await createSession(INITIAL_DATA, 1);
+          if (newId) {
+            setSessionId(newId);
+            setSessionIdInUrl(newId);
+          }
+        }
+      } else {
+        // No session in URL → create a new one
+        const newId = await createSession(INITIAL_DATA, 1);
+        if (newId) {
+          setSessionId(newId);
+          setSessionIdInUrl(newId);
+        }
+      }
+      setSessionLoading(false);
+    }
+
+    initSession();
+  }, []);
+
+  // ── Debounced Auto-Save ─────────────────────────────────────────────────
+  const scheduleSave = useCallback(
+    (updatedData, page, isSubmittedState = false) => {
+      if (!sessionId) return;
+      clearTimeout(saveTimerRef.current);
+      saveTimerRef.current = setTimeout(async () => {
+        setIsSaving(true);
+        setSaveError(false);
+        try {
+          await updateSession(sessionId, updatedData, page, isSubmittedState);
+        } catch {
+          setSaveError(true);
+        } finally {
+          setIsSaving(false);
+        }
+      }, 800); // 800ms debounce
+    },
+    [sessionId],
+  );
+
+  // ── Field Update ────────────────────────────────────────────────────────
   const updateField = (key, val) => {
-    setData((prev) => ({ ...prev, [key]: val }));
+    setData((prev) => {
+      const updated = { ...prev, [key]: val };
+      scheduleSave(updated, current);
+      return updated;
+    });
     if (errors[key])
       setErrors((prev) => {
         const e = { ...prev };
@@ -144,6 +250,7 @@ export default function App() {
       });
   };
 
+  // ── Navigation ──────────────────────────────────────────────────────────
   const handleNext = () => {
     const errs = validate(current, data);
     if (Object.keys(errs).length > 0) {
@@ -152,22 +259,20 @@ export default function App() {
       return;
     }
     setErrors({});
-    if (current === TOTAL_PAGES) {
-      // Go to review page after completing page 11
-      setCurrent(REVIEW_PAGE);
-    } else {
-      setCurrent((p) => Math.min(p + 1, TOTAL_PAGES));
-    }
+    const nextPage =
+      current === TOTAL_PAGES
+        ? REVIEW_PAGE
+        : Math.min(current + 1, TOTAL_PAGES);
+    setCurrent(nextPage);
+    scheduleSave(data, nextPage);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const handleBack = () => {
     setErrors({});
-    if (isReviewPage) {
-      setCurrent(TOTAL_PAGES);
-    } else {
-      setCurrent((p) => Math.max(p - 1, 1));
-    }
+    const prevPage = isReviewPage ? TOTAL_PAGES : Math.max(current - 1, 1);
+    setCurrent(prevPage);
+    scheduleSave(data, prevPage);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -175,9 +280,30 @@ export default function App() {
   const handleGoToPage = (pageNum) => {
     setErrors({});
     setCurrent(pageNum);
+    scheduleSave(data, pageNum);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
+  // ── Share Link ──────────────────────────────────────────────────────────
+  const handleCopyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      setLinkCopied(true);
+      setTimeout(() => setLinkCopied(false), 2500);
+    } catch {
+      // Fallback for browsers that block clipboard
+      const el = document.createElement("input");
+      el.value = window.location.href;
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand("copy");
+      document.body.removeChild(el);
+      setLinkCopied(true);
+      setTimeout(() => setLinkCopied(false), 2500);
+    }
+  };
+
+  // ── PDF ─────────────────────────────────────────────────────────────────
   const handleGeneratePDF = () => {
     try {
       generatePDF(data);
@@ -186,6 +312,7 @@ export default function App() {
     }
   };
 
+  // ── Submit ──────────────────────────────────────────────────────────────
   const handleSubmit = async () => {
     const errs = validate(current, data);
     if (Object.keys(errs).length > 0) {
@@ -310,6 +437,11 @@ export default function App() {
       // no-cors will throw a network error, but submission goes through
     }
 
+    // Mark session as submitted in DB
+    if (sessionId) {
+      await updateSession(sessionId, data, current, true);
+    }
+
     setIsSubmitting(false);
     setSubmitted(true);
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -317,6 +449,16 @@ export default function App() {
 
   const PageComponent =
     current <= TOTAL_PAGES ? PAGE_COMPONENTS[current - 1] : null;
+
+  // ── Session Loading Screen ───────────────────────────────────────────────
+  if (sessionLoading) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-canvas">
+        <Loader2 size={36} className="text-accent animate-spin" />
+        <p className="text-dim text-[15px] font-medium">Loading session…</p>
+      </div>
+    );
+  }
 
   /* ── Success Screen ─────────────────────────────────── */
   if (submitted) {
@@ -348,6 +490,13 @@ export default function App() {
                 setSubmitted(false);
                 setCurrent(1);
                 setData(INITIAL_DATA);
+                // Create new session for fresh start
+                createSession(INITIAL_DATA, 1).then((newId) => {
+                  if (newId) {
+                    setSessionId(newId);
+                    setSessionIdInUrl(newId);
+                  }
+                });
               }}
             >
               Start New Form
@@ -381,6 +530,47 @@ export default function App() {
                 Review Mode
               </span>
             )}
+
+            {/* ── Save status indicator ── */}
+            {isSaving && (
+              <span className="flex items-center gap-1.5 text-[12px] text-dim">
+                <Loader2 size={12} className="animate-spin" />
+                Saving…
+              </span>
+            )}
+            {!isSaving && saveError && (
+              <span className="text-[12px] text-bad">Save failed</span>
+            )}
+            {!isSaving && !saveError && sessionId && (
+              <span className="text-[12px] text-dim opacity-60">
+                Auto-saved
+              </span>
+            )}
+
+            {/* ── Share button ── */}
+            <button
+              id="share-link-btn"
+              onClick={handleCopyLink}
+              title="Copy shareable link"
+              className={`flex items-center gap-1.5 text-[12px] font-semibold rounded-full px-3 py-1 border transition-all duration-200 ${
+                linkCopied
+                  ? "bg-ok/15 border-ok/30 text-ok"
+                  : "bg-surface border-wire text-dim hover:text-body hover:border-accent/40"
+              }`}
+            >
+              {linkCopied ? (
+                <>
+                  <Check size={12} />
+                  Copied!
+                </>
+              ) : (
+                <>
+                  <Link2 size={12} />
+                  Share Form
+                </>
+              )}
+            </button>
+
             <span className="text-[13px] text-dim font-medium">
               Creator Workflow
             </span>
