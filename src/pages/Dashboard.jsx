@@ -9,14 +9,16 @@ import {
   Calendar,
   Layers,
   FileText,
+  Trash2,
 } from "lucide-react";
-import { listSessions } from "../lib/sessionService";
+import { listSessions, deleteSession } from "../lib/sessionService";
 import { generatePDF } from "../utils/generatePDF";
 
 export default function Dashboard() {
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [generatingId, setGeneratingId] = useState(null);
+  const [deletingId, setDeletingId] = useState(null);
 
   useEffect(() => {
     async function load() {
@@ -39,6 +41,19 @@ export default function Dashboard() {
     } finally {
       setTimeout(() => setGeneratingId(null), 500); // UI feedback
     }
+  };
+
+  const handleDelete = async (e, id) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!window.confirm("Are you sure you want to delete this form?")) return;
+
+    setDeletingId(id);
+    const success = await deleteSession(id);
+    if (success) {
+      setSessions((prev) => prev.filter((s) => s.id !== id));
+    }
+    setDeletingId(null);
   };
 
   return (
@@ -164,6 +179,18 @@ export default function Dashboard() {
                           <Loader2 size={16} className="animate-spin" />
                         ) : (
                           <FileDown size={16} />
+                        )}
+                      </button>
+                      <button
+                        onClick={(e) => handleDelete(e, s.id)}
+                        disabled={deletingId === s.id}
+                        title="Delete Form"
+                        className="flex items-center justify-center w-10 h-10 bg-lifted text-body rounded-lg hover:bg-red-500/20 hover:text-red-500 transition-colors shrink-0 disabled:opacity-50"
+                      >
+                        {deletingId === s.id ? (
+                          <Loader2 size={16} className="animate-spin" />
+                        ) : (
+                          <Trash2 size={16} />
                         )}
                       </button>
                     </div>

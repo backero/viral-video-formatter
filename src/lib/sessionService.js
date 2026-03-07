@@ -102,3 +102,16 @@ export async function listSessions() {
   }
   return rows;
 }
+
+/**
+ * Deletes a session by its UUID.
+ */
+export async function deleteSession(id) {
+  const { error } = await supabase.from("form_sessions").delete().eq("id", id);
+
+  if (error) {
+    console.error("[sessionService] deleteSession error:", error.message);
+    return false;
+  }
+  return true;
+}
