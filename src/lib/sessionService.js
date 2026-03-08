@@ -9,7 +9,8 @@ export async function createSession(data, currentPage = 1) {
   if (!data.slug) {
     const defaultTitle = "Untitled Form";
     data.formTitle = defaultTitle;
-    data.slug = defaultTitle.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+    const randomSuffix = Math.random().toString(36).substring(2, 8);
+    data.slug = `${defaultTitle.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${randomSuffix}`;
   }
 
   const { data: row, error } = await supabase

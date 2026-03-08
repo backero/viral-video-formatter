@@ -322,17 +322,9 @@ function buildDocDef(data) {
                 stack: [
                   // Badge pill
                   {
-                    text: "VIRAL VIDEO FORMATTER",
-                    fontSize: 8.5,
-                    bold: true,
-                    characterSpacing: 1.4,
-                    color: "#bfdbfe",
-                    margin: [0, 0, 0, 14],
-                  },
-                  { text: "Creator Workflow Report", style: "coverTitle" },
-                  {
-                    text: "Complete content production record",
-                    style: "coverSub",
+                    text: data.formTitle || "Unnamed Form",
+                    style: "coverTitle",
+                    margin: [0, 0, 0, 20],
                   },
 
                   // Divider

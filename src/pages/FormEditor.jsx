@@ -203,33 +203,23 @@ export default function FormEditor() {
     initSession();
   }, [slug, navigate]);
 
-  // ── Debounced Auto-Save ─────────────────────────────────────────────────
-  const scheduleSave = useCallback(
-    (updatedData, isSubmittedState = false) => {
-      if (!sessionId) return;
-      clearTimeout(saveTimerRef.current);
-      saveTimerRef.current = setTimeout(async () => {
-        setIsSaving(true);
-        setSaveError(false);
-        try {
-          await updateSession(sessionId, updatedData, 1, isSubmittedState);
-        } catch {
-          setSaveError(true);
-        } finally {
-          setIsSaving(false);
-        }
-      }, 800); // 800ms debounce
-    },
-    [sessionId],
-  );
+  // ── Manual Save ────────────────────────────────────────────────────────
+  const handleManualSave = async () => {
+    if (!sessionId) return;
+    setIsSaving(true);
+    setSaveError(false);
+    try {
+      await updateSession(sessionId, data, 1, submitted);
+    } catch {
+      setSaveError(true);
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   // ── Field Update ────────────────────────────────────────────────────────
   const updateField = (key, val) => {
-    setData((prev) => {
-      const updated = { ...prev, [key]: val };
-      scheduleSave(updated);
-      return updated;
-    });
+    setData((prev) => ({ ...prev, [key]: val }));
     if (errors[key])
       setErrors((prev) => {
         const e = { ...prev };
@@ -243,20 +233,6 @@ export default function FormEditor() {
     setIsEditingTitle(false);
     if (!data.formTitle.trim()) {
       updateField("formTitle", "Unnamed Form");
-      return;
-    }
-
-    const newSlug = data.formTitle
-      .trim()
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-");
-
-    if (newSlug !== data.slug) {
-      updateField("slug", newSlug);
-      navigate(`/f/${newSlug}`, { replace: true });
-    } else {
-      // Just save the title change
-      scheduleSave(data);
     }
   };
 
@@ -521,23 +497,29 @@ export default function FormEditor() {
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3 ml-2 sm:ml-4 shrink-0">
-            {/* ── Save status indicator ── */}
-            {isSaving && (
-              <span className="hidden sm:flex items-center gap-1.5 text-[12px] text-dim">
-                <Loader2 size={12} className="animate-spin" />
-                Saving…
-              </span>
-            )}
-            {!isSaving && saveError && (
-              <span className="text-[12px] text-bad hidden sm:block">
-                Save failed
-              </span>
-            )}
-            {!isSaving && !saveError && sessionId && (
-              <span className="text-[12px] text-dim opacity-60 hidden sm:block">
-                Saved
-              </span>
-            )}
+            {/* ── Save Button ── */}
+            <button
+              onClick={handleManualSave}
+              disabled={isSaving || !sessionId}
+              title="Save Form"
+              className="flex items-center gap-1.5 text-[13px] font-semibold rounded-full px-4 py-1.5 border transition-all duration-200 bg-surface border-wire text-dim hover:text-body hover:border-accent/40 disabled:opacity-50"
+            >
+              {isSaving ? (
+                <>
+                  <Loader2 size={14} className="animate-spin" />
+                  <span className="hidden sm:inline">Saving…</span>
+                </>
+              ) : saveError ? (
+                <>
+                  <span className="text-bad">Failed!</span>
+                </>
+              ) : (
+                <>
+                  <Check size={14} />
+                  <span className="hidden sm:inline">Save</span>
+                </>
+              )}
+            </button>
 
             {/* ── Share button ── */}
             <button
