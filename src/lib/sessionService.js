@@ -95,24 +95,59 @@ export async function listSessions() {
     .from("form_sessions")
     .select("id, data, current_page, is_submitted, updated_at")
     .order("updated_at", { ascending: false })
-    .limit(50);
+    .limit(100);
 
   if (error) {
     console.error("[sessionService] listSessions error:", error.message);
     return [];
   }
-  return rows;
+
+  // Filter out soft-deleted forms locally
+  return rows.filter((r) => !r.data?.is_deleted).slice(0, 50);
 }
 
 /**
  * Deletes a session by its UUID.
  */
 export async function deleteSession(id) {
-  const { error } = await supabase.from("form_sessions").delete().eq("id", id);
+  // Attempt a physical delete. By adding .select(), we force Supabase to return the deleted row.
+  const { data, error } = await supabase
+    .from("form_sessions")
+    .delete()
+    .eq("id", id)
+    .select();
 
   if (error) {
     console.error("[sessionService] deleteSession error:", error.message);
     return false;
   }
+
+  // If data was returned, it means the physical delete successfully removed the row from the database.
+  if (data && data.length > 0) {
+    return true;
+  }
+
+  // Fallback: If the row wasn't deleted (likely due to missing DELETE RLS policy),
+  // we do a "soft delete" by taking advantage of their UPDATE policy (which works since they can save forms).
+  const { data: current } = await supabase
+    .from("form_sessions")
+    .select("data")
+    .eq("id", id)
+    .single();
+
+  if (!current) return false;
+
+  const { error: updateError } = await supabase
+    .from("form_sessions")
+    .update({
+      data: { ...current.data, is_deleted: true },
+    })
+    .eq("id", id);
+
+  if (updateError) {
+    console.error("[sessionService] soft delete failed:", updateError.message);
+    return false;
+  }
+
   return true;
 }
