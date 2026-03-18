@@ -88,6 +88,11 @@ These don't hold retention consistently.`,
 
 export const STRUCTURE_TEMPLATES = {
   'COMPARISON STRUCTURE (A vs B)': {
+    hooks: {
+      best:   ['Comparison / Contrast Hook', 'Shock / Contradiction Hook'],
+      strong: ["Do vs Don't Hook", 'Stakes Hook', 'Desire Swap Hook'],
+      usable: ['Myth-Busting Hook', 'Curiosity Gap Hook'],
+    },
     steps: [
       'Hook (A vs B)',
       'Option A (looks good initially)',
@@ -119,6 +124,11 @@ Small change. Big skin shift.
 Comment CLEAR.`,
   },
   'STEP-BY-STEP STRUCTURE': {
+    hooks: {
+      best:   ['Tutorial Hook', 'Tip / Hack Hook'],
+      strong: ['Challenge Hook', 'Outcome-First Hook'],
+      usable: ['Curiosity Gap Hook'],
+    },
     steps: [
       'Hook (Desired Outcome)',
       'Step 1',
@@ -150,6 +160,11 @@ Do this daily for 14 days.
 Comment ROUTE.`,
   },
   'STORY FRAMEWORK (Mini Hero Journey)': {
+    hooks: {
+      best:   ['Transformation Hook', 'Outcome-First Hook', 'Stakes Hook'],
+      strong: ['Challenge Hook'],
+      usable: ['Curiosity Gap Hook', 'Shock / Contradiction Hook'],
+    },
     steps: [
       'Hook (Turning point moment)',
       'Background',
@@ -179,6 +194,11 @@ Healing beats fixing fast.
 Comment CALM.`,
   },
   'LIST STRUCTURE (3–5 Items)': {
+    hooks: {
+      best:   ['Tip / Hack Hook', 'Curiosity Gap Hook'],
+      strong: ['Tutorial Hook'],
+      usable: ['Shock / Contradiction Hook'],
+    },
     steps: [
       'Hook ("3 mistakes…", "5 things…")',
       'Item 1',
@@ -210,6 +230,11 @@ Barrier damage is the pattern.
 Comment GLOW.`,
   },
   'SMART VS DUMB STRUCTURE': {
+    hooks: {
+      best:   ['Comparison / Contrast Hook', "Do vs Don't Hook", 'Shock / Contradiction Hook'],
+      strong: ['Myth-Busting Hook', 'Stakes Hook'],
+      usable: [],
+    },
     steps: [
       'Hook ("Smart vs Dumb when it comes to X")',
       'Dumb action',
@@ -239,6 +264,11 @@ Simple always beats harsh.
 Comment FIX.`,
   },
   'BEFORE → AFTER STRUCTURE': {
+    hooks: {
+      best:   ['Transformation Hook', 'Outcome-First Hook', 'Desire Swap Hook'],
+      strong: ['Challenge Hook', 'Stakes Hook'],
+      usable: ['Comparison / Contrast Hook'],
+    },
     steps: [
       'Hook (Transformation promise)',
       'Before state',
@@ -268,6 +298,11 @@ Hydration is not optional.
 Comment CALM.`,
   },
   'PROBLEM → AGITATE → SOLUTION (PAS)': {
+    hooks: {
+      best:   ['Stakes Hook', 'Desire Swap Hook'],
+      strong: ['Myth-Busting Hook', 'Shock / Contradiction Hook', 'Curiosity Gap Hook'],
+      usable: ['Outcome-First Hook'],
+    },
     steps: [
       'Hook (Pain statement)',
       'Describe problem',
@@ -297,6 +332,11 @@ Then rebuild slowly.
 Comment RESET.`,
   },
   'MYTH BUST STRUCTURE': {
+    hooks: {
+      best:   ['Myth-Busting / Common Mistake Hook', 'Curiosity Gap Hook', 'Shock / Contradiction Hook'],
+      strong: ["Do vs Don't Hook"],
+      usable: [],
+    },
     steps: [
       'Hook (Common belief)',
       'State the myth',
@@ -324,6 +364,11 @@ Clean doesn't mean stripped.
 Comment SAFE.`,
   },
   '3-LEVEL STRUCTURE (Beginner → Pro)': {
+    hooks: {
+      best:   ['Tutorial Hook', 'Challenge Hook'],
+      strong: ['Comparison / Contrast Hook', 'Tip / Hack Hook', 'Curiosity Gap Hook'],
+      usable: [],
+    },
     steps: [
       'Hook ("3 levels of…")',
       'Beginner level',
@@ -353,6 +398,11 @@ Control beats complexity.
 Comment LEVEL.`,
   },
   'OUTCOME → PAIN POINTS → SOLUTION': {
+    hooks: {
+      best:   ['Outcome-First Hook', 'Stakes Hook', 'Desire Swap Hook'],
+      strong: ['Transformation Hook', 'Curiosity Gap Hook'],
+      usable: [],
+    },
     steps: [
       'Hook (Desired outcome)',
       'Pain point 1',
@@ -382,6 +432,11 @@ Less chaos, more results.
 Comment CLEAR.`,
   },
   "DO vs DON'T STRUCTURE": {
+    hooks: {
+      best:   ["Do vs Don't Hook", 'Myth-Busting Hook'],
+      strong: ['Comparison / Contrast Hook', 'Stakes Hook'],
+      usable: ['Shock / Contradiction Hook'],
+    },
     steps: [
       'Hook ("Stop doing this…")',
       "Don't action",
@@ -411,6 +466,11 @@ Same active, safer results.
 Comment SAFE.`,
   },
   'TIME-BASED EXPERIMENT STRUCTURE': {
+    hooks: {
+      best:   ['Challenge Hook', 'Outcome-First Hook'],
+      strong: ['Transformation Hook'],
+      usable: ['Curiosity Gap Hook', 'Shock / Contradiction Hook'],
+    },
     steps: [
       'Hook ("I did X for 30 days")',
       'Initial condition',
@@ -440,6 +500,11 @@ Less products = more control.
 Comment RESET.`,
   },
   'FAKE CASE STUDY ("If I started from scratch")': {
+    hooks: {
+      best:   ['Outcome-First Hook', 'Curiosity Gap Hook'],
+      strong: ['Transformation Hook', 'Stakes Hook'],
+      usable: ['Tip / Hack Hook'],
+    },
     steps: [
       'Hook ("If I had to start from zero…")',
       'Situation setup',
@@ -469,6 +534,11 @@ One variable prevents confusion.
 Comment PLAN.`,
   },
   'DOUBLE DOWN TEMPLATE': {
+    hooks: {
+      best:   ['Shock / Contradiction Hook', 'Challenge Hook'],
+      strong: ['Outcome-First Hook', 'Curiosity Gap Hook'],
+      usable: ['Transformation Hook'],
+    },
     steps: [
       'Hook (Proven viral hook reused)',
       'Same setup as viral',
@@ -496,6 +566,11 @@ Gentle is not weak.
 Comment FIX.`,
   },
   'COST BREAKDOWN STRUCTURE': {
+    hooks: {
+      best:   ['Curiosity Gap Hook', 'Stakes Hook'],
+      strong: ['Tip / Hack Hook', 'Desire Swap Hook', 'Shock / Contradiction Hook'],
+      usable: [],
+    },
     steps: [
       'Hook ("This cost me ₹X…")',
       'Breakdown item 1',

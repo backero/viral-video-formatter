@@ -1,5 +1,21 @@
 import { useState, useRef } from "react";
-import { VIRAL_HOOKS, PHYSIOLOGICAL_FACTORS } from "../constants/formData";
+import { VIRAL_HOOKS, PHYSIOLOGICAL_FACTORS, STRUCTURE_TEMPLATES } from "../constants/formData";
+
+// Match a short hook name (from hooks data) to a VIRAL_HOOKS label
+function hooksMatch(shortName, hookLabel) {
+  const clean = hookLabel.replace(/^\d+\.\s*/, ""); // strip "3. " prefix
+  if (clean === shortName) return true;
+  const cleanBase = clean.replace(/ Hook$/, "").trim();
+  const shortBase = shortName.replace(/ Hook$/, "").trim();
+  return cleanBase.startsWith(shortBase) || shortBase.startsWith(cleanBase);
+}
+
+const TIER_CONFIG = [
+  { key: "best",   label: "★ BEST MATCH",   color: "text-yellow-400", border: "border-yellow-400/30", bg: "bg-yellow-400/5"  },
+  { key: "strong", label: "● STRONG MATCH",  color: "text-accent",     border: "border-accent/30",     bg: "bg-accent/5"      },
+  { key: "usable", label: "○ USABLE",         color: "text-dim",        border: "border-wire",          bg: ""                 },
+  { key: "other",  label: "— OTHER HOOKS",    color: "text-ghost",      border: "border-wire",          bg: ""                 },
+];
 
 export default function Page06_Hook({ data, onChange, errors }) {
   const [otherHook, setOtherHook] = useState(data.viralHookOther || "");
@@ -32,6 +48,52 @@ export default function Page06_Hook({ data, onChange, errors }) {
     return (bytes / 1048576).toFixed(1) + " MB";
   };
 
+  // Build grouped hooks based on selected script structure
+  const structHooks = data.scriptStructure
+    ? STRUCTURE_TEMPLATES[data.scriptStructure]?.hooks
+    : null;
+
+  const getGroup = (hook) => {
+    if (!structHooks) return null;
+    if (structHooks.best?.some((n) => hooksMatch(n, hook.label))) return "best";
+    if (structHooks.strong?.some((n) => hooksMatch(n, hook.label))) return "strong";
+    if (structHooks.usable?.some((n) => hooksMatch(n, hook.label))) return "usable";
+    return "other";
+  };
+
+  // Group VIRAL_HOOKS
+  const grouped = structHooks
+    ? TIER_CONFIG.reduce((acc, { key }) => {
+        acc[key] = VIRAL_HOOKS.filter((h) => getGroup(h) === key);
+        return acc;
+      }, {})
+    : null;
+
+  const renderHookCard = (h) => {
+    const selected = data.viralHook === h.value;
+    return (
+      <label key={h.value} className={`hook-card ${selected ? "on" : ""}`}>
+        <input
+          type="radio"
+          name="viralHook"
+          value={h.value}
+          checked={selected}
+          onChange={() => {
+            onChange("viralHook", h.value);
+            onChange("viralHookOther", "");
+          }}
+        />
+        <div className="flex-1 min-w-0">
+          <div className="font-semibold text-[14px] text-body leading-snug">
+            {h.label}
+          </div>
+          <div className="text-[13px] text-dim mt-0.5">{h.desc}</div>
+          <div className="text-[12px] text-ghost mt-1 italic">Eg — {h.eg}</div>
+        </div>
+      </label>
+    );
+  };
+
   return (
     <div className="pg">
       <div className="mb-7">
@@ -49,66 +111,59 @@ export default function Page06_Hook({ data, onChange, errors }) {
           <label className="fl">
             Viral Hook Type / Framework <span className="text-bad">*</span>
           </label>
-          <div className="flex flex-col gap-2">
-            {VIRAL_HOOKS.map((h) => {
-              const selected = data.viralHook === h.value;
-              return (
-                <label
-                  key={h.value}
-                  className={`hook-card ${selected ? "on" : ""}`}
-                >
-                  <input
-                    type="radio"
-                    name="viralHook"
-                    value={h.value}
-                    checked={selected}
-                    onChange={() => {
-                      onChange("viralHook", h.value);
-                      onChange("viralHookOther", "");
-                    }}
-                  />
-                  <div className="flex-1 min-w-0">
-                    <div className="font-semibold text-[14px] text-body leading-snug">
-                      {h.label}
-                    </div>
-                    <div className="text-[13px] text-dim mt-0.5">{h.desc}</div>
-                    <div className="text-[12px] text-ghost mt-1 italic">
-                      Eg — {h.eg}
-                    </div>
-                  </div>
-                </label>
-              );
-            })}
 
-            {/* Other */}
-            <label
-              className={`hook-card ${data.viralHook === "other" ? "on" : ""}`}
-            >
-              <input
-                type="radio"
-                name="viralHook"
-                value="other"
-                checked={data.viralHook === "other"}
-                onChange={() => onChange("viralHook", "other")}
-              />
-              <div className="flex-1 min-w-0">
-                <div className="font-semibold text-[14px] text-body">Other</div>
-                {data.viralHook === "other" && (
-                  <input
-                    type="text"
-                    className="fi mt-2"
-                    placeholder="Please type another option here"
-                    value={otherHook}
-                    onChange={(e) => {
-                      setOtherHook(e.target.value);
-                      onChange("viralHookOther", e.target.value);
-                    }}
-                    onClick={(e) => e.stopPropagation()}
-                  />
-                )}
-              </div>
-            </label>
-          </div>
+          {/* If a structure with hooks is selected, show grouped */}
+          {grouped ? (
+            <div className="flex flex-col gap-5">
+              {TIER_CONFIG.map(({ key, label, color, border, bg }) => {
+                const hooks = grouped[key];
+                if (!hooks?.length) return null;
+                return (
+                  <div key={key} className={`rounded-lg border ${border} ${bg} p-4 flex flex-col gap-2`}>
+                    <span className={`text-[11px] font-bold uppercase tracking-wider ${color}`}>
+                      {label}
+                    </span>
+                    {hooks.map(renderHookCard)}
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            /* No structure selected — show all hooks ungrouped */
+            <div className="flex flex-col gap-2">
+              {VIRAL_HOOKS.map(renderHookCard)}
+            </div>
+          )}
+
+          {/* Other */}
+          <label
+            className={`hook-card mt-1 ${data.viralHook === "other" ? "on" : ""}`}
+          >
+            <input
+              type="radio"
+              name="viralHook"
+              value="other"
+              checked={data.viralHook === "other"}
+              onChange={() => onChange("viralHook", "other")}
+            />
+            <div className="flex-1 min-w-0">
+              <div className="font-semibold text-[14px] text-body">Other</div>
+              {data.viralHook === "other" && (
+                <input
+                  type="text"
+                  className="fi mt-2"
+                  placeholder="Please type another option here"
+                  value={otherHook}
+                  onChange={(e) => {
+                    setOtherHook(e.target.value);
+                    onChange("viralHookOther", e.target.value);
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                />
+              )}
+            </div>
+          </label>
+
           {errors?.viralHook && <span className="fe">{errors.viralHook}</span>}
         </div>
 
