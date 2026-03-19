@@ -14,7 +14,6 @@ const TIER_CONFIG = [
   { key: "best",   label: "★ BEST MATCH",   color: "text-yellow-400", border: "border-yellow-400/30", bg: "bg-yellow-400/5"  },
   { key: "strong", label: "● STRONG MATCH",  color: "text-accent",     border: "border-accent/30",     bg: "bg-accent/5"      },
   { key: "usable", label: "○ USABLE",         color: "text-dim",        border: "border-wire",          bg: ""                 },
-  { key: "other",  label: "— OTHER HOOKS",    color: "text-ghost",      border: "border-wire",          bg: ""                 },
 ];
 
 export default function Page06_Hook({ data, onChange, errors }) {
