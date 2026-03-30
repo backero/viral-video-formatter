@@ -80,36 +80,7 @@ export default function Page05_ScriptStructure({ data }) {
           </div>
         )}
 
-        {tmpl?.hooks && (
-          <div className="tmpl-card">
-            <div className="tmpl-header">Recommended Hooks for This Structure</div>
-            <div className="p-5 flex flex-col gap-4">
-              {[
-                { tier: '★ BEST MATCH', key: 'best',   color: 'text-yellow-400' },
-                { tier: '● STRONG MATCH', key: 'strong', color: 'text-accent'       },
-                { tier: '○ USABLE',       key: 'usable', color: 'text-dim'          },
-              ].map(({ tier, key, color }) =>
-                tmpl.hooks[key]?.length ? (
-                  <div key={key}>
-                    <span className={`text-[11px] font-bold uppercase tracking-wider ${color}`}>
-                      {tier}
-                    </span>
-                    <ul className="mt-2 flex flex-col gap-1">
-                      {tmpl.hooks[key].map((h, i) => (
-                        <li key={i} className="text-[14px] text-body flex gap-2">
-                          <span className={`${color} min-w-[14px]`}>›</span>
-                          <span>{h}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ) : null
-              )}
-            </div>
-          </div>
-        )}
-
-        {tmpl?.example && (
+   {tmpl?.example && (
           <div className="tmpl-card">
             <div className="tmpl-header">Mini Example (Skincare niche)</div>
             <div className="p-5 whitespace-pre-line italic text-dim text-[15px] leading-relaxed">
@@ -117,6 +88,8 @@ export default function Page05_ScriptStructure({ data }) {
             </div>
           </div>
         )}
+
+
 
         <div className="info-box">
           <p className="text-[14px] text-dim">
