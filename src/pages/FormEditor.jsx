@@ -28,6 +28,7 @@ import {
   Loader2,
   ChevronLeft,
 } from "lucide-react";
+import FormPreview from "../components/FormPreview";
 
 const INITIAL_DATA = {
   formTitle: "Unnamed Form",
@@ -549,8 +550,10 @@ export default function FormEditor() {
       </header>
 
       {/* ── Main ────────────────────────────────────────── */}
-      <main className="flex-1 py-10 px-4 flex justify-center">
-        <div className="w-full max-w-[800px] flex flex-col gap-6">
+      <main className="flex-1 py-10 px-4">
+        <div className="w-full max-w-[1400px] mx-auto flex gap-6 items-start">
+          {/* ── Form column ── */}
+          <div className="flex-1 min-w-0 flex flex-col gap-6">
           {/* Validation error banner */}
           {Object.keys(errors).length > 0 && (
             <div className="bg-bad/8 border border-bad/25 rounded-xl px-5 py-4 text-bad text-[14px] font-medium shadow-sm sticky top-20 z-10 backdrop-blur-md">
@@ -687,6 +690,13 @@ export default function FormEditor() {
                 {isSubmitting ? "Submitting…" : "Submit ✓"}
               </button>
             </div>
+          </div>
+          {/* ── end form column ── */}
+          </div>
+
+          {/* ── Preview column (desktop only) ── */}
+          <div className="hidden xl:block w-[300px] shrink-0 sticky top-20 max-h-[calc(100vh-5rem)] overflow-y-auto pb-10">
+            <FormPreview data={data} />
           </div>
         </div>
       </main>

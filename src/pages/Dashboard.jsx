@@ -9,9 +9,85 @@ import {
   FileText,
   Trash2,
   Calendar,
+  Check,
 } from "lucide-react";
 import { listSessions, deleteSession } from "../lib/sessionService";
 import { generatePDF } from "../utils/generatePDF";
+
+// ── Workflow stage definitions ───────────────────────────────────────────────
+const STAGES = [
+  {
+    key: "content_writer",
+    label: "Content Writer",
+    check: (d) => !!(d.script?.trim()),
+    done: "bg-purple-500/15 text-purple-400 border border-purple-400/30",
+    filter: "bg-purple-500 text-white border-purple-500",
+  },
+  {
+    key: "for_approval",
+    label: "For Approval",
+    check: (d) => d.scriptCompleted === "YES",
+    done: "bg-yellow-500/15 text-yellow-500 border border-yellow-400/30",
+    filter: "bg-yellow-500 text-white border-yellow-500",
+  },
+  {
+    key: "editor_discussion",
+    label: "Editor Discussion",
+    check: (d) => !!(d.techDiscussion?.trim()),
+    done: "bg-blue-500/15 text-blue-400 border border-blue-400/30",
+    filter: "bg-blue-500 text-white border-blue-500",
+  },
+  {
+    key: "pre_shoot",
+    label: "Pre-Shoot",
+    check: (d) => !!(d.shootDate),
+    done: "bg-orange-500/15 text-orange-400 border border-orange-400/30",
+    filter: "bg-orange-500 text-white border-orange-500",
+  },
+  {
+    key: "post_shoot",
+    label: "Post-Shoot",
+    check: (d) => !!(d.videoLink?.trim()),
+    done: "bg-cyan-500/15 text-cyan-400 border border-cyan-400/30",
+    filter: "bg-cyan-500 text-white border-cyan-500",
+  },
+  {
+    key: "completed",
+    label: "Completed",
+    check: (d, s) => d.founderApproval === "APPROVED" || !!s?.is_submitted,
+    done: "bg-ok/15 text-ok border border-ok/30",
+    filter: "bg-ok text-white border-ok",
+  },
+];
+
+function getStagesDone(session) {
+  return STAGES.map((st) => st.check(session.data || {}, session));
+}
+
+// ── Stage chips row shown on each form ────────────────────────────────────────
+function StageChips({ session }) {
+  const flags = getStagesDone(session);
+  return (
+    <div className="flex flex-wrap gap-1">
+      {STAGES.map((st, i) => {
+        const done = flags[i];
+        return (
+          <span
+            key={st.key}
+            className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full border transition-all ${
+              done
+                ? st.done
+                : "bg-transparent text-dim/40 border-wire/50"
+            }`}
+          >
+            {done && <Check size={9} strokeWidth={3} />}
+            {st.label}
+          </span>
+        );
+      })}
+    </div>
+  );
+}
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -19,6 +95,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [generatingId, setGeneratingId] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
+  const [activeFilters, setActiveFilters] = useState([]);
 
   useEffect(() => {
     async function load() {
@@ -30,6 +107,23 @@ export default function Dashboard() {
     load();
   }, []);
 
+  const toggleFilter = (key) => {
+    setActiveFilters((prev) =>
+      prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key],
+    );
+  };
+
+  const filteredSessions =
+    activeFilters.length === 0
+      ? sessions
+      : sessions.filter((s) => {
+          const flags = getStagesDone(s);
+          return activeFilters.every((fk) => {
+            const idx = STAGES.findIndex((st) => st.key === fk);
+            return idx !== -1 && flags[idx];
+          });
+        });
+
   const handleDownloadPDF = (e, session) => {
     e.preventDefault();
     e.stopPropagation();
@@ -39,7 +133,7 @@ export default function Dashboard() {
     } catch (err) {
       console.error("Failed to generate PDF", err);
     } finally {
-      setTimeout(() => setGeneratingId(null), 500); // UI feedback
+      setTimeout(() => setGeneratingId(null), 500);
     }
   };
 
@@ -104,6 +198,63 @@ export default function Dashboard() {
             </div>
           </div>
 
+          {/* ── Stage Filter Pills ──────────────────────────── */}
+          {!loading && sessions.length > 0 && (
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-[11px] font-semibold text-dim uppercase tracking-wider shrink-0">
+                  Filter by stage:
+                </span>
+                {activeFilters.length > 0 && (
+                  <button
+                    onClick={() => setActiveFilters([])}
+                    className="text-[11px] font-semibold text-dim hover:text-bad transition-colors underline underline-offset-2"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {STAGES.map((st) => {
+                  const active = activeFilters.includes(st.key);
+                  const count = sessions.filter((s) =>
+                    st.check(s.data || {}, s),
+                  ).length;
+                  return (
+                    <button
+                      key={st.key}
+                      onClick={() => toggleFilter(st.key)}
+                      className={`inline-flex items-center gap-1.5 text-[12px] font-semibold px-3 py-1.5 rounded-full border transition-all ${
+                        active
+                          ? st.filter + " border"
+                          : "bg-surface text-dim border-wire hover:border-accent/40 hover:text-body"
+                      }`}
+                    >
+                      {active && <Check size={11} strokeWidth={3} />}
+                      {st.label}
+                      <span
+                        className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
+                          active ? "bg-white/20" : "bg-lifted"
+                        }`}
+                      >
+                        {count}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+              {activeFilters.length > 0 && (
+                <p className="text-[12px] text-dim">
+                  Showing{" "}
+                  <span className="font-semibold text-body">
+                    {filteredSessions.length}
+                  </span>{" "}
+                  of {sessions.length} forms matching all selected stages.
+                </p>
+              )}
+            </div>
+          )}
+
           {loading ? (
             <div className="flex flex-col items-center justify-center py-20 gap-3 border border-wire bg-surface rounded-2xl border-dashed">
               <Loader2 size={30} className="text-accent animate-spin" />
@@ -125,19 +276,27 @@ export default function Dashboard() {
                 <Plus size={16} /> Create your first form
               </Link>
             </div>
+          ) : filteredSessions.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 gap-3 border border-wire bg-surface rounded-2xl border-dashed">
+              <p className="text-dim text-[15px]">
+                No forms match the selected filters.
+              </p>
+              <button
+                onClick={() => setActiveFilters([])}
+                className="btn-ghost text-[13px]"
+              >
+                Clear filters
+              </button>
+            </div>
           ) : (
             <>
               {/* Mobile View (Cards) */}
               <div className="grid grid-cols-1 gap-5 md:hidden">
-                {sessions.map((s) => {
+                {filteredSessions.map((s) => {
                   const title = s.data?.formTitle || "Unnamed Form";
                   const date = new Date(s.updated_at).toLocaleDateString(
                     "en-US",
-                    {
-                      month: "short",
-                      day: "numeric",
-                      year: "numeric",
-                    },
+                    { month: "short", day: "numeric", year: "numeric" },
                   );
                   const format = s.data?.format || "No format selected";
                   const company = s.data?.company || "No company";
@@ -159,7 +318,10 @@ export default function Dashboard() {
                         </div>
                       </div>
 
-                      <div className="flex flex-col gap-1.5 text-[13px] text-body flex-1 mt-2">
+                      {/* Stage chips */}
+                      <StageChips session={s} />
+
+                      <div className="flex flex-col gap-1.5 text-[13px] text-body">
                         <div className="flex gap-2">
                           <span className="text-dim w-16 shrink-0">Brand:</span>
                           <span className="truncate">{company}</span>
@@ -224,7 +386,7 @@ export default function Dashboard() {
                           Brand / Company
                         </th>
                         <th className="px-5 py-4 font-semibold whitespace-nowrap">
-                          Format
+                          Workflow Stages
                         </th>
                         <th className="px-5 py-4 font-semibold whitespace-nowrap">
                           Updated
@@ -235,7 +397,7 @@ export default function Dashboard() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-wire">
-                      {sessions.map((s) => {
+                      {filteredSessions.map((s) => {
                         const title = s.data?.formTitle || "Unnamed Form";
                         const date = new Date(s.updated_at).toLocaleDateString(
                           "en-US",
@@ -247,7 +409,6 @@ export default function Dashboard() {
                             minute: "2-digit",
                           },
                         );
-                        const format = s.data?.format || "N/A";
                         const company = s.data?.company || "N/A";
 
                         return (
@@ -260,7 +421,7 @@ export default function Dashboard() {
                           >
                             <td className="px-5 py-4">
                               <span
-                                className="font-bold text-body max-w-[200px] truncate block"
+                                className="font-bold text-body max-w-[180px] truncate block"
                                 title={title}
                               >
                                 {title}
@@ -268,19 +429,14 @@ export default function Dashboard() {
                             </td>
                             <td className="px-5 py-4 text-[14px] text-body">
                               <span
-                                className="max-w-[150px] truncate block"
+                                className="max-w-[120px] truncate block"
                                 title={company}
                               >
                                 {company}
                               </span>
                             </td>
-                            <td className="px-5 py-4 text-[14px]">
-                              <span
-                                className="text-accent font-medium bg-accent/10 px-2 py-1 rounded-md max-w-[120px] truncate block"
-                                title={format}
-                              >
-                                {format}
-                              </span>
+                            <td className="px-5 py-4">
+                              <StageChips session={s} />
                             </td>
                             <td className="px-5 py-4 text-[13px] text-dim whitespace-nowrap">
                               {date}
