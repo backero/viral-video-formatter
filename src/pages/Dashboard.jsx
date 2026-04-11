@@ -10,6 +10,7 @@ import {
   Trash2,
   Calendar,
   Check,
+  Sparkles,
 } from "lucide-react";
 import { listSessions, deleteSession } from "../lib/sessionService";
 import { generatePDF } from "../utils/generatePDF";
@@ -171,7 +172,14 @@ export default function Dashboard() {
               Content Formatter
             </span>
           </div>
-          <div className="flex items-center">
+          <div className="flex items-center gap-2">
+            <Link
+              to="/generate"
+              className="flex items-center gap-2 px-3 sm:px-4 py-1.5 text-[13px] sm:text-[14px] font-semibold rounded-full border border-accent/30 text-accent hover:bg-accent/10 transition-colors"
+            >
+              <Sparkles size={15} />
+              <span className="hidden sm:inline">Generate Script</span>
+            </Link>
             <Link
               to="/f/new"
               target="_blank"
