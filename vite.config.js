@@ -9,4 +9,14 @@ export default defineConfig({
   build: {
     chunkSizeWarningLimit: 4000,
   },
+  server: {
+    middlewareMode: false,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+        rewrite: (path) => path,
+      }
+    }
+  }
 });

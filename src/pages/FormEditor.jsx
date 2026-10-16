@@ -27,8 +27,10 @@ import {
   Check,
   Loader2,
   ChevronLeft,
+  Sparkles,
 } from "lucide-react";
 import FormPreview from "../components/FormPreview";
+import ScriptGenModal from "../components/ScriptGenModal";
 
 const INITIAL_DATA = {
   formTitle: "Unnamed Form",
@@ -118,6 +120,7 @@ export default function FormEditor() {
   const [submitted, setSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const [showScriptGen, setShowScriptGen] = useState(false);
 
   // Session / DB state
   const [sessionId, setSessionId] = useState(null);
@@ -227,6 +230,16 @@ export default function FormEditor() {
         delete e[key];
         return e;
       });
+  };
+
+  // ── Script Gen: fill multiple fields at once ───────────────────────────────
+  const handleScriptFill = (updates) => {
+    setData((prev) => ({ ...prev, ...updates }));
+    setErrors((prev) => {
+      const e = { ...prev };
+      Object.keys(updates).forEach((k) => delete e[k]);
+      return e;
+    });
   };
 
   // ── Title Renaming ──────────────────────────────────────────────────────

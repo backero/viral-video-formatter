@@ -174,6 +174,13 @@ export default function Dashboard() {
           </div>
           <div className="flex items-center gap-2">
             <Link
+              to="/raw-content"
+              className="flex items-center gap-2 px-3 sm:px-4 py-1.5 text-[13px] sm:text-[14px] font-semibold rounded-full border border-accent/30 text-accent hover:bg-accent/10 transition-colors"
+            >
+              <FileText size={15} />
+              <span className="hidden sm:inline">Raw Content</span>
+            </Link>
+            <Link
               to="/generate"
               className="flex items-center gap-2 px-3 sm:px-4 py-1.5 text-[13px] sm:text-[14px] font-semibold rounded-full border border-accent/30 text-accent hover:bg-accent/10 transition-colors"
             >
