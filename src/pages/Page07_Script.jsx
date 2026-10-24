@@ -1,7 +1,8 @@
 import { useState } from 'react'
-import { Sparkles, Loader2, Zap } from 'lucide-react'
+import { Sparkles, Loader2, Zap, FileText, Copy, Download, X } from 'lucide-react'
 import { STRUCTURE_TEMPLATES } from '../constants/formData'
 import { generateTraditionalScript } from '../utils/generateTraditionalScript'
+import { generateCompleteProductionBrief } from '../utils/enhancedScriptGenerator'
 
 export default function Page07_Script({ data, onChange }) {
   const selected = data.scriptStructure
@@ -9,6 +10,9 @@ export default function Page07_Script({ data, onChange }) {
   const [loading, setLoading] = useState(false)
   const [language, setLanguage] = useState('English')
   const [error, setError] = useState('')
+  const [generatedBrief, setGeneratedBrief] = useState(null)
+  const [showBrief, setShowBrief] = useState(false)
+  const [copied, setCopied] = useState(false)
 
   const generateAutoScript = () => {
     // Auto-generate based on Traditional Form selections (Pages 1-6)
@@ -84,6 +88,194 @@ Return ONLY the script with production notes, no explanations.`
     }
   }
 
+  const generateFullBrief = () => {
+    // Generate complete production brief with hooks, dialogues, camera angles, editor notes, etc.
+    if (!data.topic || !data.format || !data.viralHook) {
+      setError('Please fill in Topic, Format, and Hook Type first')
+      return
+    }
+
+    setLoading(true)
+    setError('')
+
+    try {
+      console.log('Generating brief for:', data)
+      const brief = generateCompleteProductionBrief(data)
+      console.log('Brief generated:', brief)
+      setGeneratedBrief(brief)
+      setShowBrief(true)
+      setError('')
+    } catch (err) {
+      console.error('Error generating brief:', err)
+      setError(err.message || 'Failed to generate production brief')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleCopyBrief = async () => {
+    if (!generatedBrief) return
+    try {
+      await navigator.clipboard.writeText(JSON.stringify(generatedBrief, null, 2))
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch (err) {
+      setError('Failed to copy to clipboard')
+    }
+  }
+
+  // Modal for viewing generated brief
+  if (showBrief && generatedBrief) {
+    return (
+      <div style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        zIndex: 9999,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: 'rgba(0, 0, 0, 0.7)',
+        padding: '1rem',
+        overflowY: 'auto'
+      }}>
+        <div style={{
+          backgroundColor: '#1a1a1a',
+          border: '2px solid #7c3aed',
+          borderRadius: '1rem',
+          maxWidth: '56rem',
+          width: '100%',
+          maxHeight: '90vh',
+          minHeight: '400px',
+          overflowY: 'auto',
+          display: 'flex',
+          flexDirection: 'column',
+          boxShadow: '0 20px 60px rgba(124, 58, 237, 0.3)'
+        }}>
+          {/* Header */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '1.5rem',
+            borderBottom: '1px solid #333',
+            position: 'sticky',
+            top: 0,
+            backgroundColor: '#1a1a1a'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <FileText size={20} style={{ color: '#7c3aed' }} />
+              <h2 style={{ fontSize: '1.125rem', fontWeight: 'bold', color: '#fff' }}>Complete Production Brief</h2>
+            </div>
+            <button
+              onClick={() => setShowBrief(false)}
+              style={{
+                padding: '0.25rem',
+                backgroundColor: 'transparent',
+                border: 'none',
+                cursor: 'pointer',
+                color: '#999'
+              }}
+            >
+              <X size={20} />
+            </button>
+          </div>
+
+          {/* Content */}
+          <div style={{ flex: 1, overflowY: 'auto', padding: '1.5rem' }}>
+            <div style={{
+              backgroundColor: '#222',
+              border: '1px solid #333',
+              borderRadius: '0.5rem',
+              padding: '1rem',
+              marginBottom: '1rem'
+            }}>
+              <h3 style={{ fontWeight: 'bold', color: '#fff', marginBottom: '0.75rem' }}>Production Brief Summary</h3>
+              <pre style={{
+                fontSize: '0.75rem',
+                whiteSpace: 'pre-wrap',
+                color: '#999',
+                fontFamily: 'monospace',
+                overflowX: 'auto',
+                maxHeight: '24rem'
+              }}>
+                {JSON.stringify(generatedBrief, null, 2)}
+              </pre>
+            </div>
+
+            {/* Script Beats */}
+            {generatedBrief.scriptBeats && (
+              <div style={{ marginBottom: '1rem' }}>
+                <h3 style={{ fontWeight: 'bold', color: '#fff', marginBottom: '0.5rem' }}>Script Beats</h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  {generatedBrief.scriptBeats.slice(0, 6).map((beat, i) => (
+                    <div key={i} style={{
+                      backgroundColor: '#222',
+                      border: '1px solid #333',
+                      borderRadius: '0.25rem',
+                      padding: '0.75rem'
+                    }}>
+                      <div style={{ fontWeight: 'bold', fontSize: '0.875rem', color: '#7c3aed' }}>Beat {i + 1}: {beat.beat}</div>
+                      <div style={{ fontSize: '0.75rem', color: '#999', marginTop: '0.25rem' }}>⏱️ {beat.timing}</div>
+                      {beat.dialogue && <div style={{ fontSize: '0.75rem', color: '#fff', marginTop: '0.25rem' }}>💬 {beat.dialogue}</div>}
+                      {beat.cameraAngle && <div style={{ fontSize: '0.75rem', color: '#999', marginTop: '0.25rem' }}>📷 {beat.cameraAngle}</div>}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Footer */}
+          <div style={{
+            borderTop: '1px solid #333',
+            padding: '1.5rem',
+            display: 'flex',
+            gap: '0.75rem'
+          }}>
+            <button
+              onClick={handleCopyBrief}
+              style={{
+                flex: 1,
+                padding: '0.5rem 1rem',
+                backgroundColor: 'rgba(124, 58, 237, 0.2)',
+                border: '1px solid #7c3aed',
+                color: '#7c3aed',
+                borderRadius: '0.25rem',
+                fontWeight: 'bold',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.5rem'
+              }}
+            >
+              <Copy size={16} />
+              {copied ? 'Copied!' : 'Copy to Clipboard'}
+            </button>
+            <button
+              onClick={() => setShowBrief(false)}
+              style={{
+                flex: 1,
+                padding: '0.5rem 1rem',
+                backgroundColor: '#222',
+                border: '1px solid #333',
+                color: '#fff',
+                borderRadius: '0.25rem',
+                fontWeight: 'bold',
+                cursor: 'pointer'
+              }}
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="pg">
       <div className="mb-7">
@@ -99,7 +291,7 @@ Return ONLY the script with production notes, no explanations.`
             <span className="text-[13px] font-bold text-accent">Script Generation</span>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-3 gap-3">
             {/* Option 1: Auto-Generate from Form */}
             <button
               onClick={generateAutoScript}
@@ -141,13 +333,35 @@ Return ONLY the script with production notes, no explanations.`
               )}
               <span className="text-[10px] font-normal opacity-75 text-accent">(Enhanced)</span>
             </button>
+
+            {/* Option 3: Generate Full Production Brief */}
+            <button
+              onClick={generateFullBrief}
+              disabled={loading || !data.topic || !data.format || !data.viralHook}
+              className="px-3 py-2.5 bg-purple-500/10 border border-purple-500/30 text-purple-500 hover:bg-purple-500/20 disabled:opacity-50 rounded text-[12px] font-bold flex items-center gap-1.5 justify-center flex-col"
+              title="Generate complete production brief with camera angles, editor notes, hooks, and more"
+            >
+              {loading ? (
+                <>
+                  <Loader2 size={13} className="animate-spin" />
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <FileText size={13} />
+                  Full Brief
+                </>
+              )}
+              <span className="text-[10px] font-normal opacity-75 text-purple-500">(Complete)</span>
+            </button>
           </div>
 
           {error && <div className="text-[11px] text-bad bg-bad/10 border border-bad/30 rounded px-2 py-1.5">{error}</div>}
 
           <p className="text-[11px] text-dim">
-            ⚡ <strong>Auto-Generate:</strong> Instant script from your form selections<br/>
-            ✨ <strong>AI-Powered:</strong> Enhanced script with better dialogue
+            ⚡ <strong>Auto-Generate:</strong> Instant script<br/>
+            ✨ <strong>AI-Powered:</strong> Enhanced dialogue<br/>
+            📄 <strong>Full Brief:</strong> Complete production guide with all details
           </p>
         </div>
 
