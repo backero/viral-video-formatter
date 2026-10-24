@@ -1,6 +1,7 @@
 import { useState } from 'react'
-import { Sparkles, Loader2 } from 'lucide-react'
+import { Sparkles, Loader2, Zap } from 'lucide-react'
 import { STRUCTURE_TEMPLATES } from '../constants/formData'
+import { generateTraditionalScript } from '../utils/generateTraditionalScript'
 
 export default function Page07_Script({ data, onChange }) {
   const selected = data.scriptStructure
@@ -9,15 +10,31 @@ export default function Page07_Script({ data, onChange }) {
   const [language, setLanguage] = useState('English')
   const [error, setError] = useState('')
 
-  const generateScript = async () => {
-    const apiKey = localStorage.getItem('openai_key')
-    if (!apiKey) {
-      setError('Please add your OpenAI API key in the Script Generator page first')
+  const generateAutoScript = () => {
+    // Auto-generate based on Traditional Form selections (Pages 1-6)
+    if (!data.topic || !data.format || !data.viralHook) {
+      setError('Please fill in Topic, Format, and Hook Type first')
       return
     }
 
-    if (!data.niche || !data.subNiche) {
-      setError('Please fill in Niche and Sub-Niche details first')
+    setLoading(true)
+    setError('')
+
+    try {
+      const result = generateTraditionalScript(data)
+      onChange('script', result.script)
+      setError('')
+    } catch (err) {
+      setError(err.message || 'Failed to generate script')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const generateScript = async () => {
+    // AI-powered script generation via backend API
+    if (!data.topic) {
+      setError('Please fill in Topic first')
       return
     }
 
@@ -26,36 +43,39 @@ export default function Page07_Script({ data, onChange }) {
 
     try {
       const prompt = `You are a viral video script writer. Generate a ${language} script for:
-- Niche: ${data.niche}
-- Product: ${data.subNiche}
-- Topic: ${data.topic || 'Not provided'}
-- Structure: ${data.scriptStructure || 'Natural'}
+- Topic: ${data.topic}
+- Niche: ${data.niche || 'Not specified'}
+- Format: ${data.format || 'Natural'}
+- Hook Type: ${data.viralHook || 'Natural'}
 - Value Prop: ${data.value || 'Not specified'}
 
-Create a 7-9 line punchy script with dialogue and actions in ${language}.
-Format: [ACTION] CHARACTER: "Dialogue" or similar.
-Return ONLY the script, no explanations.`
+Create a complete 25-second viral video script with:
+1. Hook (0-3s) - Grab attention
+2. Problem (3-8s) - Show the pain point
+3. Solution (8-14s) - Reveal the answer
+4. Proof (14-18s) - Show it works with numbers
+5. Social Proof (18-22s) - Add credibility
+6. CTA (22-25s) - Call to action
 
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+Format: [ACTION] Description or [TIME] Character: "Dialogue"
+Include camera angles, graphics, and timing for each beat.
+Return ONLY the script with production notes, no explanations.`
+
+      const response = await fetch('/api/generateScript', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`,
         },
-        body: JSON.stringify({
-          model: 'gpt-4',
-          max_tokens: 1000,
-          messages: [{ role: 'user', content: prompt }],
-        }),
+        body: JSON.stringify({ prompt }),
       })
 
       if (!response.ok) {
         const err = await response.json()
-        throw new Error(err.error?.message || `API error ${response.status}`)
+        throw new Error(err.error || `API error ${response.status}`)
       }
 
       const result = await response.json()
-      const script = result.choices?.[0]?.message?.content || ''
+      const script = result.content || ''
       onChange('script', script)
     } catch (err) {
       setError(err.message || 'Failed to generate script')
@@ -72,33 +92,41 @@ Return ONLY the script, no explanations.`
       </div>
 
       <div className="flex flex-col gap-5">
-        {/* AI Script Generator */}
+        {/* Script Generation Options */}
         <div className="bg-lifted border border-accent/20 rounded-lg p-4 flex flex-col gap-3">
           <div className="flex items-center gap-2">
             <Sparkles size={16} className="text-accent" />
-            <span className="text-[13px] font-bold text-accent">AI Script Generator</span>
+            <span className="text-[13px] font-bold text-accent">Script Generation</span>
           </div>
 
-          <div className="grid grid-cols-2 gap-2">
-            <div className="flex flex-col gap-1">
-              <label className="text-[11px] font-bold text-dim uppercase">Language</label>
-              <select
-                value={language}
-                onChange={(e) => setLanguage(e.target.value)}
-                className="fi-select text-[12px]"
-              >
-                <option>English</option>
-                <option>Tamil</option>
-                <option value="Thanglish (Tamil+English)">Thanglish</option>
-                <option>Telugu</option>
-                <option>Kannada</option>
-                <option>Hindi</option>
-              </select>
-            </div>
+          <div className="grid grid-cols-2 gap-3">
+            {/* Option 1: Auto-Generate from Form */}
+            <button
+              onClick={generateAutoScript}
+              disabled={loading || !data.topic || !data.format || !data.viralHook}
+              className="px-3 py-2.5 bg-ok/10 border border-ok/30 text-ok hover:bg-ok/20 disabled:opacity-50 rounded text-[12px] font-bold flex items-center gap-1.5 justify-center flex-col"
+              title="Generate script instantly based on your form selections"
+            >
+              {loading ? (
+                <>
+                  <Loader2 size={13} className="animate-spin" />
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <Zap size={13} />
+                  Auto-Generate
+                </>
+              )}
+              <span className="text-[10px] font-normal opacity-75 text-ok">(Instant)</span>
+            </button>
+
+            {/* Option 2: AI-Powered Generate */}
             <button
               onClick={generateScript}
-              disabled={loading}
-              className="h-fit self-end px-3 py-1.5 bg-accent/10 border border-accent/30 text-accent hover:bg-accent/20 disabled:opacity-50 rounded text-[12px] font-bold flex items-center gap-1.5 justify-center"
+              disabled={loading || !data.topic}
+              className="px-3 py-2.5 bg-accent/10 border border-accent/30 text-accent hover:bg-accent/20 disabled:opacity-50 rounded text-[12px] font-bold flex items-center gap-1.5 justify-center flex-col"
+              title="Generate script using AI with enhanced dialogue"
             >
               {loading ? (
                 <>
@@ -108,13 +136,19 @@ Return ONLY the script, no explanations.`
               ) : (
                 <>
                   <Sparkles size={13} />
-                  Generate
+                  AI-Powered
                 </>
               )}
+              <span className="text-[10px] font-normal opacity-75 text-accent">(Enhanced)</span>
             </button>
           </div>
 
-          {error && <div className="text-[11px] text-bad">{error}</div>}
+          {error && <div className="text-[11px] text-bad bg-bad/10 border border-bad/30 rounded px-2 py-1.5">{error}</div>}
+
+          <p className="text-[11px] text-dim">
+            ⚡ <strong>Auto-Generate:</strong> Instant script from your form selections<br/>
+            ✨ <strong>AI-Powered:</strong> Enhanced script with better dialogue
+          </p>
         </div>
 
         {tmpl && (

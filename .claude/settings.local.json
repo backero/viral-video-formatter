@@ -45,7 +45,10 @@
       "Bash(rm -f \"C:/Users/ADMIN/AppData/Local/Temp/claude/E--Downloads-Pictures-viral-video-formatter/c8f0f067-f79c-4b4f-b69c-18484ce76895/scratchpad/\"*.js)",
       "Bash(grep *)",
       "WebFetch(domain:typesafe.ai)",
-      "Bash(git commit -m 'fix: improve PDF generation with better VFS fonts initialization and error handling *)"
+      "Bash(git commit -m 'fix: improve PDF generation with better VFS fonts initialization and error handling *)",
+      "Bash(git commit -m 'refactor: move API key to backend environment variables *)",
+      "Bash(git reset *)",
+      "Bash(git commit -m 'feat: add auto-script generation to Traditional Form *)"
     ]
   }
 }
