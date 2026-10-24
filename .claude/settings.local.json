@@ -32,7 +32,20 @@
       "Skill(agent-browser)",
       "Bash(findstr \":517\")",
       "Bash(vercel dev *)",
-      "PowerShell(Stop-Process *)"
+      "PowerShell(Stop-Process *)",
+      "Bash(git push *)",
+      "Bash(vercel --prod)",
+      "Bash(grep -E \"^\\(express|concurrently\\)$\")",
+      "Bash(npm --version)",
+      "Read(//e/tmp/**)",
+      "Bash(mkdir -p \"C:\\\\Users\\\\ADMIN\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\E--Downloads-Pictures-viral-video-formatter\\\\c8f0f067-f79c-4b4f-b69c-18484ce76895\\\\scratchpad\")",
+      "Bash(node -e ' *)",
+      "Bash(node *)",
+      "Bash(rm -f \"C:/Users/ADMIN/AppData/Local/Temp/claude/E--Downloads-Pictures-viral-video-formatter/c8f0f067-f79c-4b4f-b69c-18484ce76895/scratchpad/\"*.json)",
+      "Bash(rm -f \"C:/Users/ADMIN/AppData/Local/Temp/claude/E--Downloads-Pictures-viral-video-formatter/c8f0f067-f79c-4b4f-b69c-18484ce76895/scratchpad/\"*.js)",
+      "Bash(grep *)",
+      "WebFetch(domain:typesafe.ai)",
+      "Bash(git commit -m 'fix: improve PDF generation with better VFS fonts initialization and error handling *)"
     ]
   }
 }

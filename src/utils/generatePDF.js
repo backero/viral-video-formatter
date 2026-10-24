@@ -8,12 +8,19 @@ import pdfFonts from "pdfmake/build/vfs_fonts";
 // Wire the virtual file system once at module-init time.
 // Different pdfmake builds expose the font data under different keys;
 // this chain covers 0.1.x, 0.2.x, and UMD/CJS builds.
-pdfMake.vfs =
-  pdfFonts?.pdfMake?.vfs ??
-  pdfFonts?.vfs ??
-  pdfFonts?.default?.pdfMake?.vfs ??
-  pdfFonts?.default?.vfs ??
-  {};
+if (pdfFonts) {
+  const vfsSource =
+    pdfFonts.pdfMake?.vfs ||
+    pdfFonts.vfs ||
+    pdfFonts.default?.pdfMake?.vfs ||
+    pdfFonts.default?.vfs;
+
+  if (vfsSource) {
+    pdfMake.vfs = vfsSource;
+  } else {
+    console.warn('PDF fonts VFS not found - PDF may be missing proper font embedding');
+  }
+}
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 function fmtDate(val) {
@@ -463,11 +470,27 @@ function buildDocDef(data) {
 
 // ── Public API ─────────────────────────────────────────────────────────────
 export function generatePDF(data) {
-  // pdfMake and its VFS are statically imported + wired at the top of this module
-  const titleStr = (data.formTitle || "Unnamed Form").replace(/\s+/g, "_");
-  const creator = data.creatorFirst ? `_${data.creatorFirst}` : "";
-  const dated = data.startDate ? `_${data.startDate}` : "";
-  const filename = `${titleStr}${creator}${dated}.pdf`;
+  try {
+    // pdfMake and its VFS are statically imported + wired at the top of this module
+    const titleStr = (data.formTitle || "Unnamed Form").replace(/\s+/g, "_");
+    const creator = data.creatorFirst ? `_${data.creatorFirst}` : "";
+    const dated = data.startDate ? `_${data.startDate}` : "";
+    const filename = `${titleStr}${creator}${dated}.pdf`;
 
-  pdfMake.createPdf(buildDocDef(data)).download(filename);
+    const docDef = buildDocDef(data);
+
+    // Validate that we have content to generate
+    if (!docDef || !docDef.content || docDef.content.length === 0) {
+      throw new Error('No content to generate PDF');
+    }
+
+    // Create and download PDF
+    const pdfDoc = pdfMake.createPdf(docDef);
+    pdfDoc.download(filename);
+
+    return true;
+  } catch (error) {
+    console.error('PDF generation error:', error);
+    throw error;
+  }
 }

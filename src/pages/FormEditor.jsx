@@ -8,7 +8,9 @@ import {
   updateSession,
 } from "../lib/sessionService";
 
+import Page00_FormMethod from "./Page00_FormMethod";
 import Page01_Details from "./Page01_Details";
+import Page01_RawContent from "./Page01_RawContent";
 import Page02_NicheTopic from "./Page02_NicheTopic";
 import Page03_Value from "./Page03_Value";
 import Page04_Formats from "./Page04_Formats";
@@ -35,6 +37,15 @@ import ScriptGenModal from "../components/ScriptGenModal";
 const INITIAL_DATA = {
   formTitle: "Unnamed Form",
   slug: "",
+  formMethod: "traditional", // "traditional" or "rawContent"
+  // Raw Content Fields
+  rawContent: "",
+  rawContentLanguage: "Auto-Detect",
+  rawContentPlatform: "General / Not Sure",
+  rawContentTone: "Sell",
+  rawContentDuration: "Auto (let platform decide)",
+  rawContentBrandVoice: "",
+  analyzedContent: null,
   // Page 1
   startDate: "",
   creatorFirst: "",
@@ -576,13 +587,36 @@ export default function FormEditor() {
 
           {/* Form Pages Stacked */}
           <div className="bg-surface border border-wire rounded-2xl p-8  flex flex-col gap-8">
-            <section id="page-01">
-              <Page01_Details
+            {/* Page 00: Form Method Selection */}
+            <section id="page-00">
+              <Page00_FormMethod
                 data={data}
                 onChange={updateField}
-                errors={errors}
               />
             </section>
+
+            <div className="border-t border-wire"></div>
+
+            {/* Conditional rendering based on formMethod */}
+            {data.formMethod === "rawContent" ? (
+              // Raw Content Path
+              <section id="page-raw-content">
+                <Page01_RawContent
+                  data={data}
+                  onChange={updateField}
+                  errors={errors}
+                />
+              </section>
+            ) : (
+              // Traditional Path
+              <>
+                <section id="page-01">
+                  <Page01_Details
+                    data={data}
+                    onChange={updateField}
+                    errors={errors}
+                  />
+                </section>
 
             <div className="border-t border-wire"></div>
 
@@ -675,6 +709,8 @@ export default function FormEditor() {
                 errors={errors}
               />
             </section>
+              </>
+            )}
           </div>
 
           {/* ── Submit Section ──────────────────────────────── */}

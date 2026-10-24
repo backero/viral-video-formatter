@@ -1,14 +1,73 @@
 import { useState, useEffect } from 'react'
-import { Sparkles, Loader2, Download, Copy, Check, Lock } from 'lucide-react'
+import { Sparkles, Loader2, Download, FileText, Copy, Check, Lock, History, Trash2, X } from 'lucide-react'
+import { generateRawContentWord } from '../utils/generateRawContentWord'
+import { generateRawContentPDF } from '../utils/generateRawContentPDF'
+
+const HISTORY_KEY = 'raw_content_history'
+const BRAND_VOICE_KEY = 'raw_content_brand_voice'
+const MAX_HISTORY = 20
+
+const PLATFORM_GUIDANCE = {
+  'Instagram Reels': 'Target 15-30 seconds. Caption should be punchy, ideally under 150 characters before "...more". Use 3-5 highly relevant hashtags, not generic spam tags.',
+  'YouTube Shorts': 'Target up to 60 seconds. Caption/description can be slightly longer and include searchable keywords. Use 3-5 hashtags.',
+  'TikTok': 'Target 15-34 seconds, punchy and fast-paced. Caption should be short and conversational. Use 3-5 hashtags including at least one trending-style tag for the niche.',
+  'General / Not Sure': 'Target 20-45 seconds, a safe format that works across Reels, Shorts, and TikTok. Use 3-5 hashtags.',
+}
+
+const TONE_GUIDANCE = {
+  'Sell': 'Optimize the script, hook, and CTA to drive a purchase or conversion. Create urgency and highlight the value/price proposition clearly.',
+  'Educate': 'Optimize the script to teach the viewer something useful and position the creator as knowledgeable. The CTA should invite them to learn more, not necessarily buy immediately.',
+  'Build Trust': 'Optimize the script to build credibility and authenticity — use proof points, specifics, and a calm, confident tone rather than hype.',
+  'Entertain': 'Optimize the script to be fun, relatable, and shareable. Humor or surprise is welcome even while delivering the core message.',
+  'Comparison': 'Structure the script as a clear comparison (option A vs option B, before vs after, us vs them). Make the contrast obvious at every beat — alternate between the two sides so the difference is unmistakable.',
+  'Storytelling': 'Structure the script as a mini narrative arc with a setup, a problem/conflict, a turning point, and a resolution — not a flat list of facts. It should feel like a story being told, even in a short format.',
+  'Step-by-Step': 'Structure the script as a clear numbered process the viewer can follow and replicate (Step 1, Step 2, Step 3...). Keep each step short, concrete, and actionable. Label each shot with its step number.',
+  'Myth vs Fact': 'Structure the script around debunking a common myth or misconception in this niche, then revealing the fact/truth with proof. Open by stating the myth confidently as if it were true, then flip it with evidence.',
+}
+
+const DURATION_GUIDANCE = {
+  'Auto (let platform decide)': null,
+  'Up to 15 seconds': 'The script MUST fit within 15 seconds total. Keep it to 3-5 tight beats, no filler.',
+  'Up to 30 seconds': 'The script MUST fit within 30 seconds total. Aim for 5-7 beats.',
+  'Up to 45 seconds': 'The script MUST fit within 45 seconds total. Aim for 7-9 beats.',
+  'Up to 60 seconds': 'The script MUST fit within 60 seconds total. Aim for 8-10 beats, this is the longest format allowed here.',
+}
+
+function loadHistory() {
+  try {
+    const raw = localStorage.getItem(HISTORY_KEY)
+    return raw ? JSON.parse(raw) : []
+  } catch {
+    return []
+  }
+}
+
+function saveHistory(entries) {
+  try {
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(entries.slice(0, MAX_HISTORY)))
+  } catch {}
+}
 
 export default function Page08_RawContentAnalyzer({ data, onChange }) {
   const [loading, setLoading] = useState(false)
   const [language, setLanguage] = useState('Auto-Detect')
+  const [platform, setPlatform] = useState('General / Not Sure')
+  const [tone, setTone] = useState('Sell')
+  const [duration, setDuration] = useState('Auto (let platform decide)')
   const [error, setError] = useState('')
+  const [languageWarning, setLanguageWarning] = useState('')
   const [copied, setCopied] = useState('')
   const [generatedContent, setGeneratedContent] = useState(null)
   const [apiKey, setApiKey] = useState('')
   const [apiKeySaved, setApiKeySaved] = useState(false)
+  const [downloading, setDownloading] = useState(false)
+  const [downloadingPdf, setDownloadingPdf] = useState(false)
+  const [brandVoice, setBrandVoice] = useState('')
+  const [brandVoiceSaved, setBrandVoiceSaved] = useState(false)
+  const [showBrandVoice, setShowBrandVoice] = useState(false)
+  const [history, setHistory] = useState([])
+  const [showHistory, setShowHistory] = useState(false)
+  const [selectedHookIndex, setSelectedHookIndex] = useState(0)
 
   useEffect(() => {
     const savedKey = localStorage.getItem('openai_key')
@@ -16,6 +75,12 @@ export default function Page08_RawContentAnalyzer({ data, onChange }) {
       setApiKey(savedKey)
       setApiKeySaved(true)
     }
+    const savedVoice = localStorage.getItem(BRAND_VOICE_KEY)
+    if (savedVoice) {
+      setBrandVoice(savedVoice)
+      setBrandVoiceSaved(true)
+    }
+    setHistory(loadHistory())
   }, [])
 
   const saveApiKey = () => {
@@ -26,6 +91,11 @@ export default function Page08_RawContentAnalyzer({ data, onChange }) {
     localStorage.setItem('openai_key', apiKey)
     setApiKeySaved(true)
     setError('')
+  }
+
+  const saveBrandVoice = () => {
+    localStorage.setItem(BRAND_VOICE_KEY, brandVoice)
+    setBrandVoiceSaved(true)
   }
 
   const analyzeRawContent = async () => {
@@ -41,6 +111,7 @@ export default function Page08_RawContentAnalyzer({ data, onChange }) {
 
     setLoading(true)
     setError('')
+    setSelectedHookIndex(0)
 
     try {
       const prompt = `You MUST respond with ONLY valid JSON, no other text before or after.
@@ -54,6 +125,14 @@ ${data.rawContent}
 
 Input Language: ${language === 'Auto-Detect' ? 'Auto-detect and use the same language for generation' : `${language} - Generate output in ${language}`}
 
+TARGET PLATFORM: ${platform}
+${PLATFORM_GUIDANCE[platform] || ''}
+
+CONTENT GOAL: ${tone}
+${TONE_GUIDANCE[tone] || ''}
+${DURATION_GUIDANCE[duration] ? `\nTARGET DURATION (this OVERRIDES the platform's default duration range above if they conflict): ${duration}\n${DURATION_GUIDANCE[duration]}` : ''}
+${brandVoice.trim() ? `\nBRAND VOICE TO MAINTAIN THROUGHOUT: ${brandVoice.trim()}\nKeep vocabulary, energy, and tone consistent with this brand voice in the script, hook, and caption.` : ''}
+
 RESPOND WITH THIS EXACT JSON STRUCTURE (VALID JSON ONLY, in the same language as input):
 {
   "analysis": {
@@ -65,11 +144,16 @@ RESPOND WITH THIS EXACT JSON STRUCTURE (VALID JSON ONLY, in the same language as
     "viralPotential": "number from 1-10"
   },
   "transformedScript": {
-    "script": "Complete viral script with [ACTION] tags on separate lines, DIALOGUE IN SAME LANGUAGE AS INPUT, 7-9 sections. If input is Thanglish, script MUST be Thanglish. If Tamil input, script MUST be Tamil.",
-    "duration": "X-Y seconds",
+    "script": "Complete viral script with [ACTION] tags on separate lines, DIALOGUE IN SAME LANGUAGE AS INPUT, broken into exactly 7-9 numbered beats. If input is Thanglish, script MUST be Thanglish. If Tamil input, script MUST be Tamil.",
+    "duration": "X-Y seconds, matching the target platform guidance given above",
     "hookType": "the hook type used (in same language as input)",
     "language": "language of script (MUST match input language)"
   },
+  "hookOptions": [
+    "alternate hook line / opening 1, IN SAME LANGUAGE AS INPUT, different angle than the script's main hook",
+    "alternate hook line / opening 2, IN SAME LANGUAGE AS INPUT, different angle again (e.g. curiosity vs shock vs direct benefit)",
+    "alternate hook line / opening 3, IN SAME LANGUAGE AS INPUT, different angle again"
+  ],
   "shotPlan": [
     {
       "shot": 1,
@@ -89,12 +173,18 @@ RESPOND WITH THIS EXACT JSON STRUCTURE (VALID JSON ONLY, in the same language as
     "soundDesign": "sound effects description"
   },
   "socialMediaContent": {
-    "hookLine": "catchy one-liner IN SAME LANGUAGE AS INPUT",
+    "hookLine": "catchy one-liner IN SAME LANGUAGE AS INPUT - this should match hookOptions[0]",
     "caption": "full social media caption with line breaks IN SAME LANGUAGE AS INPUT",
-    "cta": "call to action text IN SAME LANGUAGE AS INPUT",
+    "cta": "call to action text IN SAME LANGUAGE AS INPUT - do NOT write generic English phrases like 'Click the link in bio', write it the way a creator speaking this language would actually say it",
     "hashtags": ["tag1", "tag2", "tag3", "tag4", "tag5 - use relevant hashtags for the language/region"]
   }
 }
+
+MANDATORY RULE FOR shotPlan: The shotPlan array MUST contain ONE entry for EVERY numbered beat in transformedScript.script. If the script has 7 numbered beats, shotPlan MUST have exactly 7 objects (shot 1 through shot 7). Never stop at 1 shot. Count the beats in your script before writing shotPlan and match that count exactly.
+
+MANDATORY RULE FOR LANGUAGE: EVERY SINGLE STRING in the JSON output (hookLine, hookOptions, caption, cta, mainMessage, targetAudience, suggestedHookType) must be in the SAME language as the raw input content. Do not slip into plain English for the cta or caption even partially - keep it fully consistent with the detected language.
+
+MANDATORY RULE FOR CTA: Never write a literal or translated version of "click the link in bio", "link in description", "swipe up", or any variant of that phrase in ANY language. These are banned regardless of language. Instead write the CTA as a specific action tied to the content itself, for example: "Comment [WORD] sollu, naan DM pannuren" or "Save pannu, nalaikku thevai padum" or a direct question that invites a reply. If a brand voice was provided above, the CTA must also reflect it (e.g. if the brand voice says it backs claims with numbers, the CTA or the line just before it should include a concrete number).
 
 IMPORTANT: Return ONLY valid JSON. No markdown, no explanations, no text outside the JSON.`
 
@@ -129,8 +219,29 @@ IMPORTANT: Return ONLY valid JSON. No markdown, no explanations, no text outside
         throw new Error('Failed to parse AI response as JSON. The AI may have returned invalid JSON format.')
       }
 
+      const bannedPhrase = /click\s*(the)?\s*link|link\s*in\s*(the)?\s*bio|swipe\s*up/i
+      if (bannedPhrase.test(parsed.socialMediaContent?.cta || '') || bannedPhrase.test(parsed.socialMediaContent?.caption || '')) {
+        setLanguageWarning('Heads up: the CTA/caption may have slipped into a generic "link in bio" style phrase. Review it before using, or hit Analyze again for a different pass.')
+      } else {
+        setLanguageWarning('')
+      }
+
       setGeneratedContent(parsed)
       onChange('analyzedContent', parsed)
+
+      const entry = {
+        id: Date.now(),
+        timestamp: new Date().toISOString(),
+        rawContentPreview: data.rawContent.slice(0, 120),
+        language: parsed.analysis?.detectedLanguage || language,
+        platform,
+        tone,
+        duration,
+        generatedContent: parsed,
+      }
+      const nextHistory = [entry, ...history]
+      setHistory(nextHistory)
+      saveHistory(nextHistory)
     } catch (err) {
       setError(err.message || 'Failed to analyze content')
     } finally {
@@ -146,81 +257,94 @@ IMPORTANT: Return ONLY valid JSON. No markdown, no explanations, no text outside
     } catch {}
   }
 
-  const downloadAsWord = () => {
+  const activeHookLine = generatedContent?.hookOptions?.[selectedHookIndex] || generatedContent?.socialMediaContent?.hookLine
+
+  const contentForExport = () => {
+    if (!generatedContent) return null
+    return {
+      ...generatedContent,
+      socialMediaContent: {
+        ...generatedContent.socialMediaContent,
+        hookLine: activeHookLine,
+      },
+    }
+  }
+
+  const downloadAsWord = async () => {
     if (!generatedContent) return
+    setDownloading(true)
+    try {
+      await generateRawContentWord(contentForExport(), { language: generatedContent.analysis?.detectedLanguage })
+    } catch (err) {
+      setError('Failed to generate Word document: ' + (err.message || 'unknown error'))
+    } finally {
+      setDownloading(false)
+    }
+  }
 
-    const content = `
-VIRAL VIDEO PRODUCTION GUIDE
-Generated by AI Content Analyzer
-=====================================
+  const downloadAsPDF = () => {
+    if (!generatedContent) return
+    setDownloadingPdf(true)
+    try {
+      generateRawContentPDF(contentForExport(), { language: generatedContent.analysis?.detectedLanguage })
+    } catch (err) {
+      setError('Failed to generate PDF: ' + (err.message || 'unknown error'))
+    } finally {
+      setTimeout(() => setDownloadingPdf(false), 500)
+    }
+  }
 
-CONTENT ANALYSIS
-=====================================
-Language: ${generatedContent.analysis.detectedLanguage}
-Main Message: ${generatedContent.analysis.mainMessage}
-Target Audience: ${generatedContent.analysis.targetAudience}
-Suggested Hook: ${generatedContent.analysis.suggestedHookType}
-Content Strength: ${generatedContent.analysis.contentStrength}
-Viral Potential: ${generatedContent.analysis.viralPotential}
+  const loadFromHistory = (entry) => {
+    setGeneratedContent(entry.generatedContent)
+    onChange('rawContent', entry.rawContentPreview)
+    setSelectedHookIndex(0)
+    setShowHistory(false)
+  }
 
-TRANSFORMED SCRIPT
-=====================================
-Duration: ${generatedContent.transformedScript.duration}
-Hook Type: ${generatedContent.transformedScript.hookType}
-Language: ${generatedContent.transformedScript.language}
-
-${generatedContent.transformedScript.script}
-
-SHOT PLAN
-=====================================
-${generatedContent.shotPlan.map(shot => `
-Shot ${shot.shot}: ${shot.type}
-Duration: ${shot.duration}
-Action: ${shot.action}
-Camera: ${shot.cameraMove}
-Dialogue: ${shot.scriptLine}
-`).join('\n')}
-
-EDIT INSTRUCTIONS
-=====================================
-Music: ${generatedContent.editInstructions.music}
-Pacing: ${generatedContent.editInstructions.pacing}
-Color Grade: ${generatedContent.editInstructions.colorGrade}
-Transitions: ${generatedContent.editInstructions.transitions}
-Text Overlays: ${generatedContent.editInstructions.textOverlays.join(', ')}
-Sound Design: ${generatedContent.editInstructions.soundDesign}
-
-SOCIAL MEDIA CONTENT
-=====================================
-Hook Line: ${generatedContent.socialMediaContent.hookLine}
-
-Caption:
-${generatedContent.socialMediaContent.caption}
-
-CTA: ${generatedContent.socialMediaContent.cta}
-
-Hashtags: ${generatedContent.socialMediaContent.hashtags.join(' ')}
-
----
-Generated by Viral Video Formatter
-Ready for Production
-    `.trim()
-
-    const blob = new Blob([content], { type: 'application/msword' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = 'viral-video-guide.docx'
-    a.click()
-    URL.revokeObjectURL(url)
+  const deleteHistoryEntry = (id) => {
+    const next = history.filter((h) => h.id !== id)
+    setHistory(next)
+    saveHistory(next)
   }
 
   return (
     <div className="pg">
-      <div className="mb-7">
-        <h2 className="text-[22px] font-bold text-body tracking-tight mb-1">Raw Content Analyzer</h2>
-        <p className="text-[14px] text-dim">Paste your raw content in ANY language and AI will transform it into a production-ready viral video script</p>
+      <div className="mb-7 flex items-start justify-between gap-3">
+        <div>
+          <h2 className="text-[22px] font-bold text-body tracking-tight mb-1">Raw Content Analyzer</h2>
+          <p className="text-[14px] text-dim">Paste your raw content in ANY language and AI will transform it into a production-ready viral video script</p>
+        </div>
+        <button
+          onClick={() => setShowHistory((v) => !v)}
+          className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-semibold rounded-full border border-wire text-dim hover:text-body hover:border-accent/40"
+        >
+          <History size={14} />
+          History {history.length > 0 ? `(${history.length})` : ''}
+        </button>
       </div>
+
+      {showHistory && (
+        <div className="mb-6 border border-wire rounded-lg p-4 bg-surface flex flex-col gap-2 max-h-80 overflow-y-auto">
+          <div className="flex items-center justify-between mb-1">
+            <h4 className="text-[13px] font-bold text-body">Past Generations</h4>
+            <button onClick={() => setShowHistory(false)} className="text-dim hover:text-body">
+              <X size={14} />
+            </button>
+          </div>
+          {history.length === 0 && <p className="text-[12px] text-dim">No past generations yet. Your generated scripts will be saved here automatically.</p>}
+          {history.map((h) => (
+            <div key={h.id} className="flex items-start gap-2 p-2 rounded border border-wire/50 hover:border-accent/40">
+              <button onClick={() => loadFromHistory(h)} className="flex-1 text-left">
+                <div className="text-[11px] text-dim">{new Date(h.timestamp).toLocaleString()} · {h.language} · {h.platform} · {h.tone}</div>
+                <div className="text-[12px] text-body line-clamp-2">{h.rawContentPreview}...</div>
+              </button>
+              <button onClick={() => deleteHistoryEntry(h.id)} className="text-dim hover:text-bad shrink-0 p-1">
+                <Trash2 size={13} />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
 
       <div className="flex flex-col gap-5">
         {/* API Key Section */}
@@ -258,15 +382,36 @@ Ready for Production
           </div>
         )}
 
-        {/* Language Selection */}
-        <div className="flex gap-3">
-          <div className="flex-1">
+        {/* Brand Voice Section */}
+        <div className="border border-wire rounded-lg p-3">
+          <button onClick={() => setShowBrandVoice((v) => !v)} className="w-full flex items-center justify-between text-left">
+            <span className="text-[13px] font-semibold text-body">Brand Voice {brandVoiceSaved && brandVoice ? '✓' : '(optional)'}</span>
+            <span className="text-[11px] text-dim">{showBrandVoice ? 'Hide' : brandVoice ? 'Edit' : 'Set up'}</span>
+          </button>
+          {showBrandVoice && (
+            <div className="mt-3 flex flex-col gap-2">
+              <textarea
+                className="fi text-[13px]"
+                rows={3}
+                placeholder="e.g. Confident, no corporate jargon, speaks Tamil-first with light English mix, always backs claims with numbers"
+                value={brandVoice}
+                onChange={(e) => { setBrandVoice(e.target.value); setBrandVoiceSaved(false) }}
+              />
+              <div className="flex items-center gap-2">
+                <button onClick={saveBrandVoice} className="px-3 py-1.5 bg-accent text-white rounded text-[12px] font-bold hover:bg-accent/90">
+                  Save Brand Voice
+                </button>
+                <p className="text-[11px] text-dim">Applied automatically to every script you generate.</p>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Language / Platform / Tone / Duration Selection */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <div>
             <label className="fl">Script Language</label>
-            <select
-              value={language}
-              onChange={(e) => setLanguage(e.target.value)}
-              className="fi-select"
-            >
+            <select value={language} onChange={(e) => setLanguage(e.target.value)} className="fi-select">
               <option>Auto-Detect</option>
               <option>English</option>
               <option>Tamil</option>
@@ -274,6 +419,30 @@ Ready for Production
               <option>Telugu</option>
               <option>Kannada</option>
               <option>Hindi</option>
+            </select>
+          </div>
+          <div>
+            <label className="fl">Platform</label>
+            <select value={platform} onChange={(e) => setPlatform(e.target.value)} className="fi-select">
+              {Object.keys(PLATFORM_GUIDANCE).map((p) => (
+                <option key={p}>{p}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="fl">Content Goal</label>
+            <select value={tone} onChange={(e) => setTone(e.target.value)} className="fi-select">
+              {Object.keys(TONE_GUIDANCE).map((t) => (
+                <option key={t}>{t}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="fl">Duration</label>
+            <select value={duration} onChange={(e) => setDuration(e.target.value)} className="fi-select">
+              {Object.keys(DURATION_GUIDANCE).map((d) => (
+                <option key={d}>{d}</option>
+              ))}
             </select>
           </div>
         </div>
@@ -302,7 +471,7 @@ The AI will analyze it and transform it into a viral video script with shot plan
           {loading ? (
             <>
               <Loader2 size={16} className="animate-spin" />
-              Analyzing Content...
+              Analyzing Content... (usually 20-40 seconds)
             </>
           ) : (
             <>
@@ -313,20 +482,34 @@ The AI will analyze it and transform it into a viral video script with shot plan
         </button>
 
         {error && <div className="text-[12px] text-bad bg-bad/10 border border-bad/30 rounded p-3">{error}</div>}
+        {loading && <p className="text-[11px] text-dim text-center -mt-2">AI is studying your content and writing the full script, shot plan, and captions in your language. Please don't close this tab.</p>}
 
         {/* Generated Content Display */}
         {generatedContent && (
           <div className="mt-6 border border-accent/20 rounded-lg p-5 bg-accent/5 flex flex-col gap-4">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between flex-wrap gap-2">
               <h3 className="text-[16px] font-bold text-body">✨ AI-Generated Viral Script Package</h3>
-              <button
-                onClick={downloadAsWord}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-accent text-white rounded text-[12px] font-bold hover:bg-accent/90"
-              >
-                <Download size={14} />
-                Download
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={downloadAsPDF}
+                  disabled={downloadingPdf}
+                  className="flex items-center gap-1.5 px-3 py-1.5 border border-accent/40 text-accent rounded text-[12px] font-bold hover:bg-accent/10 disabled:opacity-50"
+                >
+                  {downloadingPdf ? <Loader2 size={14} className="animate-spin" /> : <FileText size={14} />}
+                  PDF
+                </button>
+                <button
+                  onClick={downloadAsWord}
+                  disabled={downloading}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-accent text-white rounded text-[12px] font-bold hover:bg-accent/90 disabled:opacity-50"
+                >
+                  {downloading ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
+                  {downloading ? 'Building...' : 'Download .docx'}
+                </button>
+              </div>
             </div>
+
+            {languageWarning && <div className="text-[12px] text-amber-600 bg-amber-500/10 border border-amber-500/30 rounded p-3">{languageWarning}</div>}
 
             {/* Analysis Section */}
             <div className="bg-surface rounded p-3 border border-wire">
@@ -338,6 +521,26 @@ The AI will analyze it and transform it into a viral video script with shot plan
                 <div>Viral Score: <span className="text-body">{generatedContent.analysis.viralPotential}</span></div>
               </div>
             </div>
+
+            {/* Hook Options */}
+            {generatedContent.hookOptions?.length > 0 && (
+              <div className="bg-surface rounded p-3 border border-wire">
+                <h4 className="text-[13px] font-bold text-body mb-2">🪝 Hook Variations (pick one)</h4>
+                <div className="flex flex-col gap-2">
+                  {generatedContent.hookOptions.map((h, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => setSelectedHookIndex(idx)}
+                      className={`text-left text-[12px] p-2 rounded border ${selectedHookIndex === idx ? 'border-accent bg-accent/10 text-body' : 'border-wire/50 text-dim hover:border-accent/30'}`}
+                    >
+                      {selectedHookIndex === idx && <span className="text-accent font-bold mr-1">✓</span>}
+                      {h}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-[11px] text-dim mt-2">Selected hook is used for the caption and in downloads/exports.</p>
+              </div>
+            )}
 
             {/* Script Section */}
             <div className="bg-surface rounded p-3 border border-wire">
@@ -393,7 +596,7 @@ The AI will analyze it and transform it into a viral video script with shot plan
               <div className="text-[12px] space-y-2">
                 <div>
                   <div className="font-bold text-body">Hook Line:</div>
-                  <div className="text-dim">{generatedContent.socialMediaContent.hookLine}</div>
+                  <div className="text-dim">{activeHookLine}</div>
                 </div>
                 <div>
                   <div className="font-bold text-body">Caption:</div>

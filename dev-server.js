@@ -13,14 +13,14 @@ app.post('/api/generateScript', async (req, res) => {
   }
 
   try {
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: 'gpt-4',
+        model: 'anthropic/claude-opus-5.5',
         max_tokens: 6000,
         messages: [{ role: 'user', content: prompt }],
       }),
@@ -28,9 +28,9 @@ app.post('/api/generateScript', async (req, res) => {
 
     if (!response.ok) {
       const error = await response.json();
-      console.error('OpenAI API Error:', error);
+      console.error('OpenRouter API Error:', error);
       return res.status(response.status).json({
-        error: error.error?.message || `OpenAI API error: ${response.status}`
+        error: error.error?.message || `OpenRouter API error: ${response.status}`
       });
     }
 
