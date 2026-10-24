@@ -147,12 +147,17 @@ Return ONLY the script with production notes, no explanations.`
           borderRadius: '1rem',
           maxWidth: '56rem',
           width: '100%',
-          maxHeight: '90vh',
-          minHeight: '400px',
+          height: 'auto',
+          maxHeight: '85vh',
+          minHeight: '500px',
           overflowY: 'auto',
           display: 'flex',
           flexDirection: 'column',
-          boxShadow: '0 20px 60px rgba(124, 58, 237, 0.3)'
+          boxShadow: '0 20px 60px rgba(124, 58, 237, 0.3)',
+          visibility: 'visible',
+          opacity: 1,
+          position: 'relative',
+          zIndex: 10000
         }}>
           {/* Header */}
           <div style={{
