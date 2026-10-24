@@ -1,6 +1,6 @@
 /**
  * /api/analyzeAndAutoFill
- * Uses Claude API to intelligently fill form fields based on analyzed content
+ * Uses Claude API (via OpenRouter) to intelligently fill form fields based on analyzed content
  */
 
 export default async function handler(req, res) {
