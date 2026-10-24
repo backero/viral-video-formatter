@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Sparkles, Loader2, Download, FileText, Copy, Check, Lock } from 'lucide-react'
+import { Sparkles, Loader2, Download, FileText, Copy } from 'lucide-react'
 import { generateRawContentWord } from '../utils/generateRawContentWord'
 import { generateRawContentPDF } from '../utils/generateRawContentPDF'
 
@@ -35,39 +35,17 @@ export default function Page01_RawContent({ data, onChange, errors }) {
   const [languageWarning, setLanguageWarning] = useState('')
   const [copied, setCopied] = useState('')
   const [generatedContent, setGeneratedContent] = useState(null)
-  const [apiKey, setApiKey] = useState('')
-  const [apiKeySaved, setApiKeySaved] = useState(false)
   const [downloading, setDownloading] = useState(false)
   const [downloadingPdf, setDownloadingPdf] = useState(false)
   const [selectedHookIndex, setSelectedHookIndex] = useState(0)
 
   useEffect(() => {
-    const savedKey = localStorage.getItem('openai_key')
-    if (savedKey) {
-      setApiKey(savedKey)
-      setApiKeySaved(true)
-    }
     if (data.analyzedContent) {
       setGeneratedContent(data.analyzedContent)
     }
   }, [data.analyzedContent])
 
-  const saveApiKey = () => {
-    if (!apiKey.trim()) {
-      setError('Please paste your API key')
-      return
-    }
-    localStorage.setItem('openai_key', apiKey)
-    setApiKeySaved(true)
-    setError('')
-  }
-
   const analyzeRawContent = async () => {
-    if (!apiKey) {
-      setError('Please add your OpenRouter API key first')
-      return
-    }
-
     if (!data.rawContent?.trim()) {
       setError('Please paste your raw content first')
       return
@@ -159,7 +137,6 @@ IMPORTANT: Return ONLY valid JSON. No markdown, no explanations, no text outside
         },
         body: JSON.stringify({
           prompt,
-          apiKey,
         }),
       })
 
@@ -252,41 +229,6 @@ IMPORTANT: Return ONLY valid JSON. No markdown, no explanations, no text outside
       </div>
 
       <div className="flex flex-col gap-5">
-        {/* API Key Section */}
-        {!apiKeySaved ? (
-          <div className="bg-accent/10 border border-accent/30 rounded-lg p-4 flex flex-col gap-3">
-            <div className="flex items-center gap-2">
-              <Lock size={16} className="text-accent" />
-              <label className="fl m-0">OpenRouter API Key</label>
-            </div>
-            <input
-              type="password"
-              placeholder="Paste your OpenRouter API key (sk-or-v1-...)"
-              value={apiKey}
-              onChange={(e) => setApiKey(e.target.value)}
-              className="fi text-[13px]"
-            />
-            <button
-              onClick={saveApiKey}
-              className="w-full px-4 py-2 bg-accent text-white hover:bg-accent/90 rounded-lg text-[14px] font-bold"
-            >
-              Save API Key
-            </button>
-            <p className="text-[11px] text-dim">Your API key is stored locally in your browser and never sent to our servers.</p>
-          </div>
-        ) : (
-          <div className="bg-ok/10 border border-ok/30 rounded-lg p-3 flex items-center gap-2">
-            <Check size={16} className="text-ok" />
-            <span className="text-[13px] font-semibold text-ok">API Key Saved ✓</span>
-            <button
-              onClick={() => setApiKeySaved(false)}
-              className="ml-auto text-[11px] text-dim hover:text-body underline"
-            >
-              Change
-            </button>
-          </div>
-        )}
-
         {/* Language / Platform / Tone / Duration Selection */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           <div>
