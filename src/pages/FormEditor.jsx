@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { TIER_KEY } from "../constants/formData";
-import { generatePDF } from "../utils/generatePDF";
+import { generateFormPDF } from "../utils/generateFormPDF";
 import {
   createSession,
   loadSessionBySlug,
@@ -131,6 +131,7 @@ export default function FormEditor() {
   const [submitted, setSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const [pdfError, setPdfError] = useState("");
   const [showScriptGen, setShowScriptGen] = useState(false);
 
   // Session / DB state
@@ -284,10 +285,12 @@ export default function FormEditor() {
   const handleGeneratePDF = () => {
     try {
       setIsGeneratingPDF(true);
-      generatePDF(data);
+      setPdfError("");
+      generateFormPDF(data);
       setIsGeneratingPDF(false);
     } catch (e) {
       console.error("PDF generation failed:", e);
+      setPdfError(e.message || "Failed to generate PDF");
       setIsGeneratingPDF(false);
     }
   };
@@ -462,6 +465,9 @@ export default function FormEditor() {
               <FileDown size={16} />
               {isGeneratingPDF ? "Generating PDF…" : "Download PDF Report"}
             </button>
+            {pdfError && (
+              <p className="text-bad text-[13px] leading-relaxed">{pdfError}</p>
+            )}
             <button
               className="btn-ghost w-full justify-center"
               onClick={() => navigate("/f/new")}
@@ -715,8 +721,9 @@ export default function FormEditor() {
 
           {/* ── Submit Section ──────────────────────────────── */}
           <div className="bg-surface border border-wire rounded-2xl p-6 sm:p-8   flex flex-col sm:flex-row items-center justify-between gap-5 text-center sm:text-left">
-            <div className="text-[14px] text-dim">
-              All done? Review your entries above and submit.
+            <div className="text-[14px] text-dim flex flex-col gap-1">
+              <span>All done? Review your entries above and submit.</span>
+              {pdfError && <span className="text-bad text-[13px]">{pdfError}</span>}
             </div>
 
             {/* Right actions */}

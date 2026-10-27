@@ -13,7 +13,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { listSessions, deleteSession } from "../lib/sessionService";
-import { generatePDF } from "../utils/generatePDF";
+import { generateFormPDF } from "../utils/generateFormPDF";
 
 // ── Workflow stage definitions ───────────────────────────────────────────────
 const STAGES = [
@@ -130,9 +130,10 @@ export default function Dashboard() {
     e.stopPropagation();
     try {
       setGeneratingId(session.id);
-      generatePDF(session.data);
+      generateFormPDF(session.data);
     } catch (err) {
       console.error("Failed to generate PDF", err);
+      window.alert(err.message || "Failed to generate PDF");
     } finally {
       setTimeout(() => setGeneratingId(null), 500);
     }
