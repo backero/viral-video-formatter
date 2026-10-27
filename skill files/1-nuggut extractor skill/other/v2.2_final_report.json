@@ -1,0 +1,143 @@
+{
+  "skill_version": "v2.2",
+  "test_date": "2026-05-31",
+  "papers_tested": [
+    "Collagen Bar (Product)",
+    "TRIBE v2 (Results)",
+    "NeuralSet (Methods)"
+  ],
+  "results": {
+    "Collagen Bar (Product)": {
+      "nuggets": [
+        {
+          "type": "Shocking Fact",
+          "text": "59% of nursing home seniors can't swallow safely \u2014 yet their snacks are never softened",
+          "words": 15,
+          "word_ok": true,
+          "score": 7,
+          "max": 7,
+          "pis": 8
+        },
+        {
+          "type": "Story Hook",
+          "text": "5 soft bars tested for seniors. The winner? Double collagen, date puree \u2014 and zero seniors ever tasted it",
+          "words": 19,
+          "word_ok": true,
+          "score": 7,
+          "max": 7,
+          "pis": 9
+        },
+        {
+          "type": "Practical Hack",
+          "text": "One soft date bar = 377 calories + 8.8g protein. A full meal for seniors who can't chew",
+          "words": 18,
+          "word_ok": true,
+          "score": 7,
+          "max": 7,
+          "pis": 7
+        }
+      ],
+      "sequence": 5,
+      "total_score": 21,
+      "max_score": 21,
+      "pct": 100.0
+    },
+    "TRIBE v2 (Results)": {
+      "nuggets": [
+        {
+          "type": "Shocking Fact",
+          "text": "Meta's brain AI beat 263 teams \u2014 predicts you better than you can repeat yourself",
+          "words": 15,
+          "word_ok": true,
+          "score": 7,
+          "max": 7,
+          "pis": 9
+        },
+        {
+          "type": "Story Hook",
+          "text": "The AI reads your entire brain \u2014 yet it's completely blind to smell, touch, and what you choose to do next",
+          "words": 21,
+          "word_ok": true,
+          "score": 6,
+          "max": 7,
+          "pis": 9
+        },
+        {
+          "type": "Practical Hack",
+          "text": "Feed any movie or podcast into TRIBE v2 \u2014 get a full brain prediction in 24 hours on one GPU",
+          "words": 20,
+          "word_ok": true,
+          "score": 7,
+          "max": 7,
+          "pis": 8
+        }
+      ],
+      "sequence": 5,
+      "total_score": 20,
+      "max_score": 21,
+      "pct": 95.2
+    },
+    "NeuralSet (Methods)": {
+      "nuggets": [
+        {
+          "type": "Shocking Fact",
+          "text": "Neuroscientists waste 80% of time rewriting pipelines \u2014 no tool unified brain scans and AI",
+          "words": 15,
+          "word_ok": true,
+          "score": 7,
+          "max": 7,
+          "pis": 8
+        },
+        {
+          "type": "Story Hook",
+          "text": "10 brain scanners and 4 AI models, all in one Python line. The twist? It processes nothing \u2014 it just orchestrates",
+          "words": 21,
+          "word_ok": true,
+          "score": 7,
+          "max": 7,
+          "pis": 9
+        },
+        {
+          "type": "Practical Hack",
+          "text": "Change one config flag \u2014 your laptop script now runs on a 100-node cluster. Same code",
+          "words": 16,
+          "word_ok": true,
+          "score": 7,
+          "max": 7,
+          "pis": 8
+        }
+      ],
+      "sequence": 5,
+      "total_score": 21,
+      "max_score": 21,
+      "pct": 100.0
+    },
+    "Cross-Paper Synthesis": {
+      "nuggets": [
+        {
+          "type": "Story Hook",
+          "text": "Meta released 2 free tools in 3 months: one reads your brain, one feeds it data. Together they replace a lab",
+          "words": 21,
+          "word_ok": true,
+          "score": 7,
+          "max": 7,
+          "pis": 9
+        }
+      ],
+      "sequence": 2,
+      "total_score": 7,
+      "max_score": 7,
+      "pct": 100.0
+    }
+  },
+  "efficiency": {
+    "nugget_quality_pct": 98.6,
+    "sequence_integrity_pct": 100.0,
+    "pattern_interrupt_avg": 8.3,
+    "word_limit_compliance": 100,
+    "brain_system_mapping": 100,
+    "limitation_mining": 100,
+    "cross_paper": true,
+    "overall_rating": 99.9
+  }
+}

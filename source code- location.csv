@@ -1,0 +1,12 @@
+﻿File,Size,Description
+`src/pages/Phase1.tsx`,56.8 KB,Phase 1 Input form
+`src/pages/Phase2.tsx`,43.4 KB,Phase 2 Structure selector
+`src/pages/Phase3.tsx`,22.7 KB,Phase 3 Auto screenplay
+`src/pages/Phase4.tsx`,90.2 KB,Phase 4 52-check validator
+`src/pages/Phase5.tsx`,58.1 KB,Phase 5 Output generator
+`src/pages/Phase6.tsx`,56.5 KB,Phase 6 AI Node Editor
+`src/lib/nodeEditorData.ts`,14.2 KB,Node graph data
+`src/lib/docxGenerator.ts`,23.5 KB,Word export engine
+`src/App.tsx`,732 B,Router with all 6 phases
+`src/components/`,~30 files,"Sidebar, Layout, UI library"
+"`package.json`, `vite.config.ts`, `tsconfig.json`, etc.",—,Project config
