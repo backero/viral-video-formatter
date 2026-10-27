@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react'
-import { Sparkles, Loader2, Download, FileText, Copy } from 'lucide-react'
+import { Sparkles, Loader2, Download, FileText, Copy, Check } from 'lucide-react'
 import { generateRawContentWord } from '../utils/generateRawContentWord'
 import { generateRawContentPDF } from '../utils/generateRawContentPDF'
+import { mapAnalyzedContentToFields } from '../utils/mapAnalyzedContentToFields'
+import { COMPANIES } from '../constants/formData'
 
 const PLATFORM_GUIDANCE = {
   'Instagram Reels': 'Target 15-30 seconds. Caption should be punchy, ideally under 150 characters before "...more". Use 3-5 highly relevant hashtags, not generic spam tags.',
@@ -169,6 +171,9 @@ IMPORTANT: Return ONLY valid JSON. No markdown, no explanations, no text outside
 
       setGeneratedContent(parsed)
       onChange('analyzedContent', parsed)
+
+      const mapped = mapAnalyzedContentToFields(parsed, data.rawContent)
+      Object.entries(mapped).forEach(([key, value]) => onChange(key, value))
     } catch (err) {
       setError(err.message || 'Failed to analyze content')
     } finally {
@@ -229,6 +234,26 @@ IMPORTANT: Return ONLY valid JSON. No markdown, no explanations, no text outside
       </div>
 
       <div className="flex flex-col gap-5">
+        {/* Company — needed for Submit/PDF, can't be inferred from raw content */}
+        <div className="flex flex-col gap-1.5">
+          <label className="fl">
+            Which Company / Brand is the Video For <span className="text-bad">*</span>
+          </label>
+          <select
+            className={`fi-select ${errors?.company ? 'fi-err' : ''}`}
+            value={data.company || ''}
+            onChange={(e) => onChange('company', e.target.value)}
+          >
+            <option value="">Please Select</option>
+            {COMPANIES.map((c) => (
+              <option key={c} value={c}>
+                {c}
+              </option>
+            ))}
+          </select>
+          {errors?.company && <span className="fe">{errors.company}</span>}
+        </div>
+
         {/* Language / Platform / Tone / Duration Selection */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           <div>
@@ -352,7 +377,10 @@ The AI will analyze it and transform it into a viral video script with shot plan
                   {generatedContent.hookOptions.map((h, idx) => (
                     <button
                       key={idx}
-                      onClick={() => setSelectedHookIndex(idx)}
+                      onClick={() => {
+                        setSelectedHookIndex(idx)
+                        onChange('writtenHook', h)
+                      }}
                       className={`text-left text-[12px] p-2 rounded border ${selectedHookIndex === idx ? 'border-accent bg-accent/10 text-body' : 'border-wire/50 text-dim hover:border-accent/30'}`}
                     >
                       {selectedHookIndex === idx && <span className="text-accent font-bold mr-1">✓</span>}

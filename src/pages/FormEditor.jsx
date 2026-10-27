@@ -101,14 +101,21 @@ const INITIAL_DATA = {
 
 function validateAll(data) {
   const errs = {};
+  const isRawContent = data.formMethod === "rawContent";
 
   if (!data.company) errs.company = "Please select a company";
   if (!data.topic?.trim()) errs.topic = "Topic is required";
 
-  if (!data.format) errs.format = "Please select a format";
-  const tierKey = data.format ? TIER_KEY(data.format) : null;
-  if (tierKey && tierKey !== "F" && !data.scriptStructure) {
-    errs.scriptStructure = "Please choose a script structure";
+  // Format tier, script structure, and physiological factors only exist on
+  // the Traditional Form UI — Raw Content forms have no way to set them.
+  if (!isRawContent) {
+    if (!data.format) errs.format = "Please select a format";
+    const tierKey = data.format ? TIER_KEY(data.format) : null;
+    if (tierKey && tierKey !== "F" && !data.scriptStructure) {
+      errs.scriptStructure = "Please choose a script structure";
+    }
+    if (!data.physiologicalFactors?.length)
+      errs.physiologicalFactors = "Select at least one physiological factor";
   }
 
   if (!data.viralHook) errs.viralHook = "Please select a viral hook type";
@@ -116,8 +123,6 @@ function validateAll(data) {
     errs.visualHook = "Visual hook action is required";
   if (!data.writtenHook?.trim()) errs.writtenHook = "Written hook is required";
   if (!data.audioHook?.trim()) errs.audioHook = "Audio hook is required";
-  if (!data.physiologicalFactors?.length)
-    errs.physiologicalFactors = "Select at least one physiological factor";
 
   return errs;
 }
