@@ -1,0 +1,14 @@
+<claude-code-hint v="1" type="plugin" value="vercel@claude-plugins-official" />
+Vercel CLI 65.4.0 (Node.js 24.11.1)
+{
+  "status": "error",
+  "reason": "deploy_failed",
+  "message": "Environment Variable \"VITE_API_URL\" references Secret \"vite_api_url\", which does not exist.",
+  "next": [
+    {
+      "command": "vercel deploy",
+      "when": "retry deploy"
+    }
+  ]
+}
+Error: Environment Variable "VITE_API_URL" references Secret "vite_api_url", which does not exist.
