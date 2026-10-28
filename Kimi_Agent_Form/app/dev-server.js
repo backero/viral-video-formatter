@@ -4,6 +4,10 @@
 
 import http from 'http';
 import url from 'url';
+import dotenv from 'dotenv';
+
+// Load environment variables from .env file
+dotenv.config();
 import { default as extractNuggets } from './api/extract-nuggets.js';
 import { default as generateScreenplay } from './api/generate-screenplay.js';
 import { default as validateScreenplay } from './api/validate-screenplay.js';

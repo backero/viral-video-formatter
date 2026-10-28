@@ -1,5 +1,5 @@
 // Vercel Serverless Function for AI Screenplay Generation
-export default function handler(req, res) {
+export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -19,106 +19,92 @@ export default function handler(req, res) {
     return res.status(400).json({ error: 'Topic required' });
   }
 
-  // Generate screenplay based on input
-  const durationPerScene = lengthSec / 5;
+  try {
+    const apiKey = process.env.OPENROUTER_API_KEY;
+    if (!apiKey) {
+      console.error('OPENROUTER_API_KEY not set');
+      return res.status(500).json({ error: 'API key not configured' });
+    }
 
-  const mockScenes = [
-    {
-      sceneNum: 1,
-      name: 'THE HOOK',
-      timingStart: 0,
-      timingEnd: Math.ceil(durationPerScene),
-      duration: Math.ceil(durationPerScene),
-      dialogue: writtenHook || `Here's something you didn't know about ${topic}.`,
-      action: '(Actor: Opens with confident expression, looks directly at camera)',
-      camera: { shot: 'Close-up', angle: 'Low angle', movement: 'Handheld micro-jolt' },
-      actor: { expression: 'Confident, intrigued', energy: 8, pace: 'Fast' },
-      visual: `Text overlay: "${(writtenHook || 'KEY INSIGHT').substring(0, 20).toUpperCase()}" - Bold, centered`,
-      audio: 'Low beat enters at 0%, alert SFX at midpoint',
-      editMarkers: [
-        { time: '0.0s', event: 'Open on face - close-up' },
-        { time: String(durationPerScene * 0.5) + 's', event: 'Text overlay pop-in' },
-      ],
-    },
-    {
-      sceneNum: 2,
-      name: 'THE PROBLEM',
-      timingStart: Math.ceil(durationPerScene),
-      timingEnd: Math.ceil(durationPerScene * 2),
-      duration: Math.ceil(durationPerScene),
-      dialogue: whyTheyCare || `Most people don't realize the impact of this.`,
-      action: '(Actor: Gestures to emphasize problem, shows concern)',
-      camera: { shot: 'Medium', angle: 'Eye level', movement: 'Static with B-cam insert' },
-      actor: { expression: 'Serious, authoritative', energy: 7, pace: 'Normal' },
-      visual: 'B-roll showing problem context or challenge',
-      audio: 'Tension music builds, alert SFX reinforces problem',
-      editMarkers: [
-        { time: String(durationPerScene) + 's', event: 'Cut to medium shot' },
-        { time: String(durationPerScene * 1.5) + 's', event: 'B-cam insert for pattern interrupt' },
-      ],
-    },
-    {
-      sceneNum: 3,
-      name: 'THE SOLUTION',
-      timingStart: Math.ceil(durationPerScene * 2),
-      timingEnd: Math.ceil(durationPerScene * 3),
-      duration: Math.ceil(durationPerScene),
-      dialogue: `That's where the solution comes in. ${audioHook || 'This changes everything.'}`,
-      action: '(Actor: Reveals or demonstrates the solution with enthusiasm)',
-      camera: { shot: 'Medium', angle: 'Eye level', movement: 'Push-in 15%' },
-      actor: { expression: 'Hopeful, excited', energy: 8, pace: 'Normal to fast' },
-      visual: 'Product or solution revealed with positive colors (greens, golds)',
-      audio: 'Music shifts to positive, achievement SFX reinforces solution',
-      editMarkers: [
-        { time: String(durationPerScene * 2) + 's', event: 'Scene transition - push in begins' },
-        { time: String(durationPerScene * 2.5) + 's', event: 'Solution reveal with SFX' },
-      ],
-    },
-    {
-      sceneNum: 4,
-      name: 'THE PROOF',
-      timingStart: Math.ceil(durationPerScene * 3),
-      timingEnd: Math.ceil(durationPerScene * 4),
-      duration: Math.ceil(durationPerScene),
-      dialogue: proof || `Verified and proven. Users see real results.`,
-      action: '(Actor: Points to proof, shows confidence and pride)',
-      camera: { shot: 'Close-up to medium', angle: 'Eye level', movement: 'Dolly in on proof' },
-      actor: { expression: 'Proud, confident', energy: 9, pace: 'Normal' },
-      visual: 'Charts, testimonials, before/after comparisons, or certification badges',
-      audio: 'Beat intensifies, celebration SFX at peak moment',
-      editMarkers: [
-        { time: String(durationPerScene * 3) + 's', event: 'Proof montage begins' },
-        { time: String(durationPerScene * 3.5) + 's', event: 'Peak moment - celebration SFX' },
-      ],
-    },
-    {
-      sceneNum: 5,
-      name: 'CTA',
-      timingStart: Math.ceil(durationPerScene * 4),
-      timingEnd: lengthSec,
-      duration: lengthSec - Math.ceil(durationPerScene * 4),
-      dialogue: `Get started today. Your ${topic.toLowerCase()} journey starts now.`,
-      action: '(Actor: Direct eye contact, friendly confidence, points to CTA)',
-      camera: { shot: 'Close-up', angle: 'Eye level', movement: 'Static with freeze frame' },
-      actor: { expression: 'Warm, inviting', energy: 7, pace: 'Normal to slow' },
-      visual: 'Clean product shot or call-to-action with clear next steps',
-      audio: 'Music resolves gently, warm outro sound',
-      editMarkers: [
-        { time: String(durationPerScene * 4) + 's', event: 'CTA reveal' },
-        { time: String(lengthSec - 1) + 's', event: 'Freeze frame for final moment' },
-      ],
-    },
-  ];
+    const durationPerScene = Math.ceil(lengthSec / 5);
 
-  return res.status(200).json({
-    success: true,
-    scenes: mockScenes,
-    message: 'Screenplay generated successfully',
-    metadata: {
-      topic,
-      duration: lengthSec,
-      language,
-      sceneCount: 5,
-    },
-  });
+    const prompt = `You are a viral video director. Create a 5-scene screenplay for a ${lengthSec}s video about: "${topic}"
+
+Context:
+- Why people care: ${whyTheyCare || 'Unknown'}
+- Proof/Evidence: ${proof || 'Unknown'}
+- Visual hook: ${visualHook || 'Engaging visuals'}
+- Written hook: ${writtenHook || 'Compelling opening'}
+- Audio hook: ${audioHook || 'Attention-grabbing sound'}
+
+Return ONLY valid JSON (no markdown) with this exact structure:
+[
+  {
+    "sceneNum": 1,
+    "name": "Scene Name",
+    "timingStart": 0,
+    "timingEnd": ${durationPerScene},
+    "duration": ${durationPerScene},
+    "dialogue": "What the actor says (natural, conversational)",
+    "action": "(Actor direction in parentheses)",
+    "camera": {"shot": "Close-up/Medium/Wide", "angle": "Angle", "movement": "Movement type"},
+    "actor": {"expression": "Expression", "energy": 8, "pace": "Pace"},
+    "visual": "Visual elements and text overlays",
+    "audio": "Music, SFX, ambient sound",
+    "editMarkers": [{"time": "0.0s", "event": "Edit event"}]
+  },
+  ...repeat for scenes 2-5, incrementing timings by ${durationPerScene}
+]`;
+
+    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+        'HTTP-Referer': 'https://viralform.app',
+        'X-Title': 'Viral Form Video Creator',
+      },
+      body: JSON.stringify({
+        model: 'claude-3.5-sonnet',
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.9,
+        max_tokens: 3000,
+      }),
+    });
+
+    if (!response.ok) {
+      const errData = await response.json();
+      throw new Error(errData.error?.message || `OpenRouter API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const content = data.choices[0]?.message?.content;
+
+    if (!content) {
+      throw new Error('No content in API response');
+    }
+
+    const scenes = JSON.parse(content);
+
+    if (!Array.isArray(scenes) || scenes.length < 5) {
+      throw new Error('API did not return 5 scenes');
+    }
+
+    return res.status(200).json({
+      success: true,
+      scenes: scenes.slice(0, 5),
+      message: 'Screenplay generated successfully',
+      metadata: {
+        topic,
+        duration: lengthSec,
+        language,
+        sceneCount: 5,
+      },
+    });
+  } catch (error) {
+    console.error('Generate screenplay error:', error);
+    return res.status(500).json({
+      error: error.message || 'Failed to generate screenplay',
+    });
+  }
 }
