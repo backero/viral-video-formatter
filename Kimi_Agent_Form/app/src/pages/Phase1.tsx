@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -233,6 +233,16 @@ export default function Phase1() {
   const [copyDescription, setCopyDescription] = useState(() => data.copyDescription || '');
 
   const [toast, setToast] = useState<string | null>(null);
+
+  /* --- auto-save to context --- */
+  useEffect(() => {
+    updateData({
+      date, creator, actor, company, platform, estimatedLength, aspectRatio, actorCount, language,
+      research, niche, subNiche, thePoint, whyTheyCare, theProof,
+      actionableTakeaway, whyNugget, timeToValue, contentStyle, selfChecks, validationChecks,
+      refUrl, copyElement, copyDescription,
+    });
+  }, [date, creator, actor, company, platform, estimatedLength, aspectRatio, actorCount, language, research, niche, subNiche, thePoint, whyTheyCare, theProof, actionableTakeaway, whyNugget, timeToValue, contentStyle, selfChecks, validationChecks, refUrl, copyElement, copyDescription, updateData]);
 
   /* --- computed --- */
   const researchCharCount = research.length;
