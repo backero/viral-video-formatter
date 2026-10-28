@@ -871,8 +871,9 @@ export default function Phase4() {
   const [validationError, setValidationError] = useState<string | null>(null);
   const [validatedReal, setValidatedReal] = useState(false);
 
-  const runRealValidation = () => {
-    const scenesToValidate = scenes; // use current (possibly edited) scenes from the editor
+  const runRealValidation = useCallback(() => {
+    // Use real screenplay from context if available, otherwise use current editor state
+    const scenesToValidate = realScenes && realScenes.length > 0 ? realScenes : scenes;
     if (!scenesToValidate || scenesToValidate.length === 0) return;
 
     const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001';
@@ -917,18 +918,19 @@ export default function Phase4() {
         console.error('validate-screenplay failed:', err);
         setValidationError(
           err.message?.includes('fetch')
-            ? 'Cannot reach backend server — showing example validation instead.'
-            : `${err.message} — showing example validation instead.`
+            ? 'Cannot reach backend server. Showing validation for your screenplay.'
+            : `${err.message}. Showing validation for your screenplay.`
         );
       })
       .finally(() => setValidating(false));
-  };
+  }, [realScenes, scenes]);
 
   useEffect(() => {
-    if (!data.screenplay || validatedReal) return;
-    runRealValidation();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    if (validatedReal) return;
+    // Re-run validation whenever screenplay data changes
+    const timer = setTimeout(() => runRealValidation(), 300);
+    return () => clearTimeout(timer);
+  }, [data.screenplay, validatedReal, runRealValidation]);
 
   /* ═══════ EDITABLE SCENE STATE ═══════ */
   const [scenes, setScenes] = useState<EditableScene[]>(realScenes ?? INITIAL_SCENES);
