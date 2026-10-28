@@ -72,8 +72,15 @@ const server = http.createServer((req, res) => {
           res.writeHead(statusCode, headers);
           res.end(body);
         });
-        extractNuggets(mockReq, mockRes);
+        try {
+          extractNuggets(mockReq, mockRes);
+        } catch (handlerErr) {
+          console.error('extract-nuggets handler error:', handlerErr);
+          res.writeHead(500, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'Server error', details: handlerErr.message }));
+        }
       } catch (err) {
+        console.error('Parse error:', err);
         res.writeHead(400, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ error: 'Invalid JSON' }));
       }
@@ -89,8 +96,15 @@ const server = http.createServer((req, res) => {
           res.writeHead(statusCode, headers);
           res.end(body);
         });
-        generateScreenplay(mockReq, mockRes);
+        try {
+          generateScreenplay(mockReq, mockRes);
+        } catch (handlerErr) {
+          console.error('generate-screenplay handler error:', handlerErr);
+          res.writeHead(500, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'Server error', details: handlerErr.message }));
+        }
       } catch (err) {
+        console.error('Parse error:', err);
         res.writeHead(400, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ error: 'Invalid JSON' }));
       }
@@ -106,8 +120,15 @@ const server = http.createServer((req, res) => {
           res.writeHead(statusCode, headers);
           res.end(body);
         });
-        validateScreenplay(mockReq, mockRes);
+        try {
+          validateScreenplay(mockReq, mockRes);
+        } catch (handlerErr) {
+          console.error('validate-screenplay handler error:', handlerErr);
+          res.writeHead(500, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'Server error', details: handlerErr.message }));
+        }
       } catch (err) {
+        console.error('Parse error:', err);
         res.writeHead(400, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ error: 'Invalid JSON' }));
       }
