@@ -36,11 +36,8 @@ import { cn } from '@/lib/utils';
 import { useFormData } from '@/context/FormDataContext';
 import { saveProject } from '@/lib/projectStore';
 
-// Use Vercel serverless function or fallback to localhost for development
-const API_BASE = import.meta.env.VITE_API_URL ||
-  (typeof window !== 'undefined' && window.location.hostname === 'localhost'
-    ? 'http://localhost:3001'
-    : '/api');
+// Use Vercel serverless functions via /api endpoint
+const API_BASE = import.meta.env.VITE_API_URL || '/api';
 const NUGGET_COLORS = ['#EF4444', '#22C55E', '#F59E0B'];
 
 /* ------------------------------------------------------------------ */
@@ -276,9 +273,7 @@ export default function Phase1() {
     setNuggetsVisible(false);
     setExtractError(null);
     try {
-      const endpoint = API_BASE.includes('/api')
-        ? `${API_BASE}/extract-nuggets`
-        : `${API_BASE}/api/extract-nuggets`;
+      const endpoint = `${API_BASE}/extract-nuggets`;
       const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

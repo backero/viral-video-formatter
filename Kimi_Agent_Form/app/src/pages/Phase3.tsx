@@ -149,11 +149,11 @@ export default function Phase3() {
 
   const fetchScreenplay = () => {
     if (!effectiveTopic) return;
-    const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+    const API_BASE = import.meta.env.VITE_API_URL || '/api';
     setLoadingScreenplay(true);
     setScreenplayError(null);
 
-    fetch(`${API_BASE}/api/generate-screenplay`, {
+    fetch(`${API_BASE}/generate-screenplay`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -182,7 +182,7 @@ export default function Phase3() {
         console.error('generate-screenplay failed:', err);
         setScreenplayError(
           err.message?.includes('fetch')
-            ? 'Cannot reach backend server (localhost:3001). Showing example screenplay instead.'
+            ? 'Cannot reach backend server. Showing example screenplay instead.'
             : `${err.message} — showing example screenplay instead.`
         );
       })

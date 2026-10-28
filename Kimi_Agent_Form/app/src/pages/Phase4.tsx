@@ -876,11 +876,11 @@ export default function Phase4() {
     const scenesToValidate = realScenes && realScenes.length > 0 ? realScenes : scenes;
     if (!scenesToValidate || scenesToValidate.length === 0) return;
 
-    const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+    const API_BASE = import.meta.env.VITE_API_URL || '/api';
     setValidating(true);
     setValidationError(null);
 
-    fetch(`${API_BASE}/api/validate-screenplay`, {
+    fetch(`${API_BASE}/validate-screenplay`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
