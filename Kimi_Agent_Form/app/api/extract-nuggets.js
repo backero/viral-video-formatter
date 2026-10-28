@@ -44,7 +44,7 @@ export default function handler(req, res) {
 
   return res.status(200).json({
     success: true,
-    nuggets: mockNuggets,
+    options: mockNuggets,
     message: "AI-generated nuggets extracted successfully"
   });
 }
