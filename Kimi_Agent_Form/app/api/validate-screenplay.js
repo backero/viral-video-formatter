@@ -63,7 +63,7 @@ Check these 10 key areas:
         'X-Title': 'Viral Form Video Creator',
       },
       body: JSON.stringify({
-        model: 'claude-3.5-sonnet',
+        model: 'openai/gpt-6.1-terra-pro',
         messages: [{ role: 'user', content: prompt }],
         temperature: 0.7,
         max_tokens: 2000,

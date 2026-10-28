@@ -45,7 +45,7 @@ Return ONLY valid JSON, no other text.`;
         'X-Title': 'Viral Form Video Creator',
       },
       body: JSON.stringify({
-        model: 'claude-3.5-sonnet',
+        model: 'openai/gpt-6.1-terra-pro',
         messages: [{ role: 'user', content: prompt }],
         temperature: 0.8,
         max_tokens: 1000,
