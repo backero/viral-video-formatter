@@ -173,83 +173,8 @@ const CATEGORY_ICONS: Record<Category, React.ReactNode> = {
 /*  THE 52 CHECKS - VALIDATION DATA                                    */
 /* ═══════════════════════════════════════════════════════════════════ */
 
-const INITIAL_CHECKS: CheckItem[] = [
-  // === Golden Rules (18) ===
-  { id: 'GR01', name: 'Demonstration-First Dialogue', category: 'Golden Rule', severity: 'Major', result: 'PASS', evidence: 'All 5 scenes demonstrate before explaining. Scene 3 shows fridge placement before saying it.', overridden: false, scenesAffected: [], suggestedFix: '' },
-  { id: 'GR02', name: 'Action-to-Dialogue Ratio >= 2.0', category: 'Golden Rule', severity: 'Major', result: 'PASS', evidence: 'Overall ratio = 2.4. Scene 4 has highest action density with calendar + count-up.', overridden: false },
-  { id: 'GR03', name: 'Silent-Runtime Quota by Format', category: 'Golden Rule', severity: 'Major', result: 'PASS', evidence: 'Silent runtime = 18% (5.4s of 30s). Pre-CTA freeze at 29.0s qualifies.', overridden: false },
-  { id: 'GR04', name: 'Hook Parseable Muted (Full Video)', category: 'Golden Rule', severity: 'Critical', result: 'PASS', evidence: 'Scene 1: "47 PRODUCTS" text + face + bottles visible muted. 4 of 5 scenes carry meaning via visual+text.', overridden: false },
-  { id: 'GR05', name: 'Broad -> Narrow -> Niche', category: 'Golden Rule', severity: 'Major', result: 'PASS', evidence: 'Hook uses "tested 47 products" (universal). Body narrows to vitamin C. CTA targets serum owners.', overridden: false },
-  { id: 'GR06', name: "Show, Don't Tell (LOC/EBA/VWFA)", category: 'Golden Rule', severity: 'Major', result: 'PASS', evidence: '"47" on screen at 0.3s, "70%" at 4.0s, "$60 -> 60 DAYS" count-up at 18s.', overridden: false },
-  { id: 'GR07', name: 'Visual Change Every 2 Seconds', category: 'Golden Rule', severity: 'Major', result: 'FAIL', evidence: 'Scene 4 (THE PROOF) has a 3.2s static talking-head segment from 20-23.2s with only audio SFX.', overridden: false, scenesAffected: [4], suggestedFix: 'Insert a B-roll cutaway or text animation at the 2.0s mark in Scene 4 (around 20.0s). Split the static shot.' },
-  { id: 'GR08', name: 'Silent Moments Mandatory', category: 'Golden Rule', severity: 'Minor', result: 'PASS', evidence: 'Pre-CTA freeze at 29.0s for 1.0s. Product reveal in Scene 3 at 10.0s (fridge door).', overridden: false },
-  { id: 'GR09', name: 'Bridge Words Between Sentences', category: 'Golden Rule', severity: 'Minor', result: 'FAIL', evidence: 'Scene 2 opens without bridge: "And I found that..." is weak. Scene 5 has no bridge to Scene 4. Bridge coverage = 40% (below 70%).', overridden: false, scenesAffected: [2, 5], suggestedFix: 'Scene 2: Start with "But here\'s what shocked me..." Scene 5: Start with "So if you want to save money..."' },
-  { id: 'GR10', name: 'Action-Integrated Dialogue (EBA+STS)', category: 'Golden Rule', severity: 'Minor', result: 'PASS', evidence: 'Every dialogue line has action parenthetical: "slams phone", "shakes bottle", "walks to fridge".', overridden: false },
-  { id: 'GR11', name: 'Tri-Modal Convergence in 0-1.5s', category: 'Golden Rule', severity: 'Critical', result: 'PASS', evidence: 'Scene 1: visual (face) at 0.0s, audio (VO) at 0.0s, text ("47") at 0.3s. Convergence window met.', overridden: false },
-  { id: 'GR12', name: 'Research Fidelity Carry-Over', category: 'Golden Rule', severity: 'Critical', result: 'PASS', evidence: '"47 products tested" and "70% go bad" match Phase 2 claims. No inflation detected.', overridden: false },
-  { id: 'GR13', name: 'Studio-Realistic Scope', category: 'Golden Rule', severity: 'Major', result: 'PASS', evidence: 'Props: 2 serum bottles, 1 fridge, 1 calendar. All achievable in studio.', overridden: false },
-  { id: 'GR14', name: 'Caption Coverage = 100%', category: 'Golden Rule', severity: 'Critical', result: 'PASS', evidence: 'Every spoken word has corresponding caption marker in edit notes.', overridden: false },
-  { id: 'GR15', name: 'One Peak Per Video', category: 'Golden Rule', severity: 'Major', result: 'PASS', evidence: 'Single peak at Scene 4 (cash register SFX at 22s, energy 7). No other competing peak.', overridden: false },
-  { id: 'GR16', name: 'Hook > Script > Format > Edit Priority', category: 'Golden Rule', severity: 'Minor', result: 'PASS', evidence: 'Scene 1 has 4 edit markers (highest). Hook receives highest production attention.', overridden: false },
-  { id: 'GR17', name: '5x Outlier Match', category: 'Golden Rule', severity: 'Minor', result: 'N/A', evidence: 'No reference video provided in Phase 1. Check skipped.', overridden: false },
-  { id: 'GR18', name: 'Mobile-First Safe Zone Compliance', category: 'Golden Rule', severity: 'Major', result: 'PASS', evidence: 'All hero text in middle 65%. "47 PRODUCTS" centered. Caption text in bottom 20%.', overridden: false },
-
-  // === Quality Gate (10) ===
-  { id: 'QG01', name: 'Scroll-Stop in 0.5s', category: 'Quality Gate', severity: 'Critical', result: 'PASS', evidence: 'Scene 1: face (0.0s) + motion (bottles raised at 0.5s) + text (0.3s). All within 0.5s.', overridden: false },
-  { id: 'QG02', name: 'Value in First 3-5s', category: 'Quality Gate', severity: 'Critical', result: 'PASS', evidence: '"47 skincare products" + "so you don\'t have to" delivers value promise by 2.5s.', overridden: false },
-  { id: 'QG03', name: 'Natural When Read Aloud', category: 'Quality Gate', severity: 'Major', result: 'PASS', evidence: 'Staccato beats (5-7 words). Contractions used. No corporate speak.', overridden: false },
-  { id: 'QG04', name: '10-Year-Old Understands', category: 'Quality Gate', severity: 'Major', result: 'PASS', evidence: 'Hook readability = 4th grade. No unexplained jargon in Scene 1.', overridden: false },
-  { id: 'QG05', name: 'Cameraman Knows What to Do', category: 'Quality Gate', severity: 'Major', result: 'PASS', evidence: 'All 5 scenes specify shot, angle, movement. No ambiguous directions.', overridden: false },
-  { id: 'QG06', name: 'Actor Knows Expression/Pace/Energy', category: 'Quality Gate', severity: 'Major', result: 'PASS', evidence: 'Every scene: expression named, energy 1-10 rated, pace specified.', overridden: false },
-  { id: 'QG07', name: 'Editor Knows Where Every Cut Happens', category: 'Quality Gate', severity: 'Major', result: 'PASS', evidence: '17 edit markers across 5 scenes. All cuts have timestamps.', overridden: false },
-  { id: 'QG08', name: 'Exactly One CTA <=5 Words at End', category: 'Quality Gate', severity: 'Critical', result: 'PASS', evidence: '"Save this" = 2 words. Single CTA in final scene. Freeze frame specified.', overridden: false },
-  { id: 'QG09', name: 'Muted Viewer Understands Everything', category: 'Quality Gate', severity: 'Critical', result: 'FAIL', evidence: 'Scene 4 (THE PROOF) relies heavily on VO for the "30 days" story. Visual alone doesn\'t convey the time element. 20% of scenes are VO-dependent.', overridden: false, scenesAffected: [4], suggestedFix: 'Add "30 DAYS" text overlay to Scene 4 at 15.0s. Show calendar dates more prominently in B-roll.' },
-  { id: 'QG10', name: 'Visual Change Every 2 Seconds', category: 'Quality Gate', severity: 'Major', result: 'FAIL', evidence: 'Same as GR07. Scene 4 has 3.2s static segment. Overall change rate = 1.8s average (good) but Scene 4 drags.', overridden: false, scenesAffected: [4], suggestedFix: 'Insert text overlay or cut at 20.0s in Scene 4.' },
-
-  // === Neuroscience (8) ===
-  { id: 'NS01', name: 'Brain Region Coverage Completeness', category: 'Neuroscience', severity: 'Major', result: 'PASS', evidence: '8 of 9 expected regions firing. FFA (faces), MT/V5 (motion), VWFA (text), A1 (audio), DMN ("you/your"), EBA (hand actions), LOC (objects), Prefrontal (numbers).', overridden: false },
-  { id: 'NS02', name: 'Multimodal Convergence Density', category: 'Neuroscience', severity: 'Major', result: 'FAIL', evidence: 'Convergence density = 60% (3 of 5 scenes). Scene 4 is bimodal only (visual + audio, missing strong text element within 1.5s).', overridden: false, scenesAffected: [4], suggestedFix: 'Add primary on-screen text to Scene 4 within 0.3s of scene start.' },
-  { id: 'NS03', name: 'Hemodynamic Delay Alignment', category: 'Neuroscience', severity: 'Minor', result: 'PASS', evidence: 'Peak at Scene 4 (22s), CTA at 25s. Gap = 3s. Adequate consolidation time.', overridden: false },
-  { id: 'NS04', name: 'DMN (Self-Reference) Activation Density', category: 'Neuroscience', severity: 'Minor', result: 'FAIL', evidence: '"you/your" density = 1.1 per 10 words (below 2.0 threshold). Hook has zero second-person references.', overridden: false, scenesAffected: [1, 4], suggestedFix: 'Rewrite Scene 1 hook: "I tested 47 skincare products so YOU don\'t have to" (already there - verify). Add "your serum" to Scene 4.' },
-  { id: 'NS05', name: 'VWFA Stimulation Density', category: 'Neuroscience', severity: 'Minor', result: 'PASS', evidence: 'All 5 scenes have on-screen text. 4 of 5 have primary hero text beyond captions.', overridden: false },
-  { id: 'NS06', name: 'Auditory Cortex Onset Compliance', category: 'Neuroscience', severity: 'Critical', result: 'PASS', evidence: 'Scene 1 first word onset = 0.0s. No dead air.', overridden: false },
-  { id: 'NS07', name: 'Variable-Pace Prosody Compliance', category: 'Neuroscience', severity: 'Minor', result: 'PASS', evidence: 'Hook = Fast, Body = Normal -> Fast, CTA = Normal-Urgent. Variable pacing confirmed.', overridden: false },
-  { id: 'NS08', name: 'Hook Visual Hierarchy (FFA/MT/VWFA in 0.5s)', category: 'Neuroscience', severity: 'Critical', result: 'PASS', evidence: 'Scene 1: face (FFA) at 0.0s, bottle motion (MT) at 0.5s, "47" text (VWFA) at 0.3s.', overridden: false },
-
-  // === Staccato (6) ===
-  { id: 'SA01', name: 'Beat Length <= 8 Words', category: 'Staccato', severity: 'Major', result: 'PASS', evidence: 'Longest beat = 8 words ("I tested 47 skincare products so you don\'t have to"). All others 3-7 words.', overridden: false },
-  { id: 'SA02', name: 'No Conjunctions Between Beats', category: 'Staccato', severity: 'Minor', result: 'PASS', evidence: 'Zero conjunctions between hard stops. Periods and cuts carry transitions.', overridden: false },
-  { id: 'SA03', name: '5th-Grade Readability', category: 'Staccato', severity: 'Major', result: 'PASS', evidence: 'Hook = 4th grade. Body = 6th grade. CTA = 3rd grade. All within thresholds.', overridden: false },
-  { id: 'SA04', name: 'You/Your Density', category: 'Staccato', severity: 'Minor', result: 'FAIL', evidence: 'Density = 1.3 per 10 words (below 2.0). Total "you/your" = 4 across 31 spoken words.', overridden: false, scenesAffected: [1, 4, 5], suggestedFix: 'Add "your" to Scene 4: "My $60 serum lasted 60 days instead of YOUR 30." Add "you" to Scene 5: "Save this before YOUR serum goes bad."' },
-  { id: 'SA05', name: 'Forbidden Words Absent', category: 'Staccato', severity: 'Major', result: 'PASS', evidence: 'Zero forbidden words detected. No "revolutionary", "game-changer", "unlock", etc.', overridden: false },
-  { id: 'SA06', name: 'Pronunciation Notes for Technical Terms', category: 'Staccato', severity: 'Info', result: 'PASS', evidence: 'No technical terms requiring pronunciation notes in this script.', overridden: false },
-
-  // === PBL (5) ===
-  { id: 'PBL01', name: 'SEE / READ / HEAR Triple-Hook Present', category: 'PBL', severity: 'Critical', result: 'PASS', evidence: 'Scene 1: SEE = bottles + face, READ = "47 PRODUCTS", HEAR = VO at 0.0s.', overridden: false },
-  { id: 'PBL02', name: 'Visual Hook >= Verbal Hook', category: 'PBL', severity: 'Major', result: 'PASS', evidence: '"47 PRODUCTS" text + bottles tell the story muted. VO is amplifier.', overridden: false },
-  { id: 'PBL03', name: 'Muted-Parse Test', category: 'PBL', severity: 'Critical', result: 'PASS', evidence: 'Cross-ref with GR04: PASS. Muted viewer understands hook.', overridden: false },
-  { id: 'PBL04', name: 'Broad-Hook Test', category: 'PBL', severity: 'Major', result: 'PASS', evidence: '"47 skincare products" is universal. No jargon gating.', overridden: false },
-  { id: 'PBL05', name: '4-Component Script Anatomy Present', category: 'PBL', severity: 'Minor', result: 'PASS', evidence: 'All scenes: filming notes, dialogue/action, caption plan, subtitle support.', overridden: false },
-
-  // === Studio (4) ===
-  { id: 'ST01', name: 'Actor Count vs Format Skin', category: 'Studio', severity: 'Major', result: 'PASS', evidence: '1 actor, Talking-Head/ABR Hybrid format. Compatible.', overridden: false },
-  { id: 'ST02', name: 'Lighting Setups <= Available', category: 'Studio', severity: 'Major', result: 'PASS', evidence: '2 setups required (Bright Key + Soft Fill). Studio has 4 fixtures.', overridden: false },
-  { id: 'ST03', name: 'B-roll Source Availability', category: 'Studio', severity: 'Major', result: 'PASS', evidence: 'Fridge B-roll = studio prop. Calendar = studio prop. No external sources needed.', overridden: false },
-  { id: 'ST04', name: 'Custom Animation Lead Time', category: 'Studio', severity: 'Minor', result: 'PASS', evidence: 'Count-up animation ($60 -> 60 DAYS) flagged in production notes.', overridden: false },
-
-  // === CTA (4) ===
-  { id: 'CT01', name: 'CTA Freeze Frame', category: 'CTA', severity: 'Major', result: 'PASS', evidence: 'Scene 5: freeze at 29.0s for 1.0s. Static CTA card.', overridden: false },
-  { id: 'CT02', name: 'CTA Text <= 5 Words', category: 'CTA', severity: 'Major', result: 'PASS', evidence: '"Save this" = 2 words.', overridden: false },
-  { id: 'CT03', name: 'Single CTA Only', category: 'CTA', severity: 'Major', result: 'PASS', evidence: 'Exactly one CTA in Scene 5. No mid-video CTAs.', overridden: false },
-  { id: 'CT04', name: 'Export Specs Present', category: 'CTA', severity: 'Info', result: 'PASS', evidence: '1080x1920, H.264, 30fps, 12Mbps documented.', overridden: false },
-
-  // === MultiLang (2) ===
-  { id: 'ML01', name: 'Language Tag Consistency', category: 'MultiLang', severity: 'Minor', result: 'N/A', evidence: 'Single-language script (English). Skipped.', overridden: false },
-  { id: 'ML02', name: 'Caption Coverage Per Language', category: 'MultiLang', severity: 'Major', result: 'N/A', evidence: 'Single-language script. Skipped.', overridden: false },
-
-  // === Reference (1) ===
-  { id: 'RV01', name: 'Reference Video Match Compliance', category: 'Reference', severity: 'Minor', result: 'N/A', evidence: 'No reference video supplied. Skipped.', overridden: false },
-];
+// Start with empty checks - all validation comes from API response
+const INITIAL_CHECKS: CheckItem[] = [];
 
 const ROLE_CHECK_MAP: Record<string, string[]> = {
   'Content Lead': ['GR01','GR02','GR03','GR04','GR05','GR06','GR07','GR08','GR09','GR10','GR11','GR12','GR13','GR14','GR15','GR16','GR17','GR18','SA01','SA02','SA03','SA04','SA05','SA06','QG01','QG02','QG03','QG04','QG05','QG06','QG07','QG08','QG09','QG10'],
