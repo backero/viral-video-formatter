@@ -843,7 +843,7 @@ function BrainRegionMatrix() {
 
 export default function Phase4() {
   const navigate = useNavigate();
-  const { data, updateData } = useFormData();
+  const { data } = useFormData();
 
   const realScenes: EditableScene[] | null = data.screenplay
     ? data.screenplay.map((s: any) => ({
@@ -866,6 +866,7 @@ export default function Phase4() {
       }))
     : null;
 
+  const [scenes, setScenes] = useState<EditableScene[]>(realScenes ?? INITIAL_SCENES);
   const [checks, setChecks] = useState<CheckItem[]>(INITIAL_CHECKS);
   const [validating, setValidating] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
@@ -933,7 +934,6 @@ export default function Phase4() {
   }, [data.screenplay, validatedReal, runRealValidation]);
 
   /* ═══════ EDITABLE SCENE STATE ═══════ */
-  const [scenes, setScenes] = useState<EditableScene[]>(realScenes ?? INITIAL_SCENES);
   const [appliedFixes, setAppliedFixes] = useState<string[]>([]);
   const [showSceneEditor, setShowSceneEditor] = useState(false);
 
