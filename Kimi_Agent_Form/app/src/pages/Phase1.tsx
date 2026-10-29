@@ -170,9 +170,6 @@ function FormLabel({ children, className }: { children: React.ReactNode; classNa
   );
 }
 
-function InlineExample({ children }: { children: React.ReactNode }) {
-  return <p className="text-sm text-text-tertiary italic mt-1">{children}</p>;
-}
 
 /* ------------------------------------------------------------------ */
 /*  Main Component                                                    */
@@ -805,7 +802,6 @@ export default function Phase1() {
                 />
               </div>
               <div className="flex justify-between mt-1">
-                <InlineExample>Example: ...this shocking fact about vitamin C oxidation changes how they see their entire routine.</InlineExample>
                 <span
                   className={cn(
                     'text-xs',
@@ -829,22 +825,6 @@ export default function Phase1() {
               Define your topic using these exact formats:
             </p>
 
-            {/* Anti-fluff banner */}
-            <motion.div
-              className="rounded-lg p-3 mb-5 flex items-start gap-2.5"
-              style={{
-                backgroundColor: 'rgba(239, 68, 68, 0.06)',
-                borderLeft: '3px solid #EF4444',
-              }}
-              initial={{ x: -10, opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              transition={{ duration: 0.4, ease: easeOut, delay: 0.3 }}
-            >
-              <AlertTriangle size={16} className="text-error flex-shrink-0 mt-0.5" />
-              <p className="text-sm text-text-secondary">
-                AI copypaste detected in 68% of failed videos. These forced formats break generic patterns.
-              </p>
-            </motion.div>
 
             {/* Niche & Sub-niche */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5">
@@ -906,7 +886,6 @@ export default function Phase1() {
                 />
               </div>
               <div className="flex justify-between mt-1">
-                <InlineExample>Example: ...how to fix your skincare routine in under 5 minutes.</InlineExample>
                 <span className="text-xs text-text-tertiary">{wordCount(thePoint)}/20 words</span>
               </div>
               {topicErrors.thePoint && (
@@ -939,8 +918,7 @@ export default function Phase1() {
                   )}
                 />
               </div>
-              <div className="flex justify-between mt-1">
-                <InlineExample>Example: ...73% of people throw away oxidized product they paid good money for.</InlineExample>
+              <div className="flex justify-end mt-1">
                 <span className="text-xs text-text-tertiary">{wordCount(whyTheyCare)}/20 words</span>
               </div>
               {topicErrors.whyTheyCare && (
@@ -973,8 +951,7 @@ export default function Phase1() {
                   )}
                 />
               </div>
-              <div className="flex justify-between mt-1">
-                <InlineExample>Example: ...I've reduced product waste by 70% using this one method.</InlineExample>
+              <div className="flex justify-end mt-1">
                 <span className="text-xs text-text-tertiary">{wordCount(theProof)}/20 words</span>
               </div>
               {topicErrors.theProof && (
@@ -1015,10 +992,7 @@ export default function Phase1() {
                   className="bg-bg-tertiary border-border-subtle text-text-primary placeholder:text-text-tertiary focus-visible:ring-accent-input/30 pl-[300px]"
                 />
               </div>
-              <div className="flex justify-between mt-1">
-                <InlineExample>
-                  Example: ...store their vitamin C serum correctly to double its lifespan.
-                </InlineExample>
+              <div className="flex justify-end mt-1">
                 <span className="text-xs text-text-tertiary">{wordCount(actionableTakeaway)}/25 words</span>
               </div>
             </div>
