@@ -1,0 +1,13 @@
+{
+  "buildCommand": "cd Kimi_Agent_Form/app && npm run build",
+  "outputDirectory": "Kimi_Agent_Form/app/dist",
+  "env": {
+    "OPENROUTER_API_KEY": "@openrouter_api_key",
+    "VITE_API_URL": "/api"
+  },
+  "functions": {
+    "api/**/*.js": {
+      "runtime": "nodejs20.x"
+    }
+  }
+}
