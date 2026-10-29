@@ -784,23 +784,15 @@ export default function Phase1() {
                 Why This Nugget?{' '}
                 <span className="text-text-tertiary font-normal">(max 40 words)</span>
               </FormLabel>
-              <div className="relative">
-                <span
-                  className="absolute left-3 top-3 text-sm font-medium"
-                  style={{ color: ACCENT }}
-                >
-                  A [target viewer] scrolling [platform] will stop because
-                </span>
-                <Textarea
-                  value={whyNugget}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    if (wordCount(val) <= 40) setWhyNugget(val);
-                  }}
-                  placeholder="...this stat challenges everything they thought they knew about skincare."
-                  className="bg-bg-tertiary border-border-subtle text-text-primary placeholder:text-text-tertiary focus-visible:ring-accent-input/30 min-h-[80px] pt-10 resize-vertical"
-                />
-              </div>
+              <Textarea
+                value={whyNugget}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (wordCount(val) <= 40) setWhyNugget(val);
+                }}
+                placeholder="Why viewers will stop scrolling because..."
+                className="bg-bg-tertiary border-border-subtle text-text-primary placeholder:text-text-tertiary focus-visible:ring-accent-input/30 min-h-[80px] resize-vertical"
+              />
               <div className="flex justify-between mt-1">
                 <span
                   className={cn(
@@ -865,26 +857,18 @@ export default function Phase1() {
               <FormLabel>
                 The Point <span className="text-text-tertiary font-normal">(max 20 words)</span>
               </FormLabel>
-              <div className="relative">
-                <span
-                  className="absolute left-3 top-2.5 text-sm font-medium"
-                  style={{ color: ACCENT }}
-                >
-                  This video teaches
-                </span>
-                <Input
-                  value={thePoint}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    if (wordCount(val) <= 20) { setThePoint(val); validateTopicField(val, 'thePoint'); }
-                  }}
-                  placeholder="...how to keep your vitamin C serum from oxidizing too early."
-                  className={cn(
-                    'bg-bg-tertiary border-border-subtle text-text-primary placeholder:text-text-tertiary focus-visible:ring-accent-input/30 pl-[130px]',
-                    topicErrors.thePoint && 'border-error focus-visible:ring-error/30'
-                  )}
-                />
-              </div>
+              <Input
+                value={thePoint}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (wordCount(val) <= 20) { setThePoint(val); validateTopicField(val, 'thePoint'); }
+                }}
+                placeholder="What viewers will learn from this video..."
+                className={cn(
+                  'bg-bg-tertiary border-border-subtle text-text-primary placeholder:text-text-tertiary focus-visible:ring-accent-input/30',
+                  topicErrors.thePoint && 'border-error focus-visible:ring-error/30'
+                )}
+              />
               <div className="flex justify-between mt-1">
                 <span className="text-xs text-text-tertiary">{wordCount(thePoint)}/20 words</span>
               </div>
@@ -931,26 +915,18 @@ export default function Phase1() {
               <FormLabel>
                 The Proof <span className="text-text-tertiary font-normal">(max 20 words)</span>
               </FormLabel>
-              <div className="relative">
-                <span
-                  className="absolute left-3 top-2.5 text-sm font-medium"
-                  style={{ color: ACCENT }}
-                >
-                  Trust me because
-                </span>
-                <Input
-                  value={theProof}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    if (wordCount(val) <= 20) { setTheProof(val); validateTopicField(val, 'theProof'); }
-                  }}
-                  placeholder="...I've tested 20+ serums and the fridge trick always works."
-                  className={cn(
-                    'bg-bg-tertiary border-border-subtle text-text-primary placeholder:text-text-tertiary focus-visible:ring-accent-input/30 pl-[120px]',
-                    topicErrors.theProof && 'border-error focus-visible:ring-error/30'
-                  )}
-                />
-              </div>
+              <Input
+                value={theProof}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (wordCount(val) <= 20) { setTheProof(val); validateTopicField(val, 'theProof'); }
+                }}
+                placeholder="Why this is trustworthy proof..."
+                className={cn(
+                  'bg-bg-tertiary border-border-subtle text-text-primary placeholder:text-text-tertiary focus-visible:ring-accent-input/30',
+                  topicErrors.theProof && 'border-error focus-visible:ring-error/30'
+                )}
+              />
               <div className="flex justify-end mt-1">
                 <span className="text-xs text-text-tertiary">{wordCount(theProof)}/20 words</span>
               </div>
