@@ -937,18 +937,6 @@ export default function Phase4() {
   const [appliedFixes, setAppliedFixes] = useState<string[]>([]);
   const [showSceneEditor, setShowSceneEditor] = useState(false);
 
-  /* Auto-save editable scenes to context */
-  useEffect(() => {
-    const editedScreenplay = scenes.map(s => ({
-      sceneNum: s.sceneNum, name: s.name, timingStart: s.timingStart, timingEnd: s.timingEnd,
-      duration: s.duration, dialogue: s.dialogue, action: s.action,
-      camera: { shot: s.cameraShot, angle: s.cameraAngle, movement: s.cameraMovement },
-      actor: { expression: s.actorExpression, energy: s.actorEnergy, pace: s.actorPace },
-      visual: s.visual, audio: s.audio,
-      editMarkers: JSON.parse(s.editMarkers || '[]'),
-    }));
-    updateData({ screenplay: editedScreenplay });
-  }, [scenes, updateData]);
 
   const handleOverride = useCallback((checkId: string) => {
     setChecks(prev => prev.map(c => c.id === checkId ? { ...c, overridden: !c.overridden } : c));

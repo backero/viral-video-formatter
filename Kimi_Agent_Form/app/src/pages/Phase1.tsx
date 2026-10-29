@@ -234,16 +234,6 @@ export default function Phase1() {
 
   const [toast, setToast] = useState<string | null>(null);
 
-  /* --- auto-save to context --- */
-  useEffect(() => {
-    updateData({
-      date, creator, actor, company, platform, estimatedLength, aspectRatio, actorCount, language,
-      research, niche, subNiche, thePoint, whyTheyCare, theProof,
-      actionableTakeaway, whyNugget, timeToValue, contentStyle, selfChecks, validationChecks,
-      refUrl, copyElement, copyDescription,
-    });
-  }, [date, creator, actor, company, platform, estimatedLength, aspectRatio, actorCount, language, research, niche, subNiche, thePoint, whyTheyCare, theProof, actionableTakeaway, whyNugget, timeToValue, contentStyle, selfChecks, validationChecks, refUrl, copyElement, copyDescription, updateData]);
-
   /* --- computed --- */
   const researchCharCount = research.length;
   const isResearchReady = researchCharCount > 200;
