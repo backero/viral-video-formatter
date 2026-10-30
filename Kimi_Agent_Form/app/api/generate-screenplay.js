@@ -10,9 +10,9 @@ function detectLanguage(text) {
   const hindiRegex = /[ऀ-ॿ]/g;
   const hindiCount = (text.match(hindiRegex) || []).length;
 
-  // If significant Tamil characters detected
-  if (tamilCount > text.length * 0.1) return 'TA'; // Tamil
-  if (hindiCount > text.length * 0.1) return 'HI'; // Hindi
+  // If significant Tamil/Hindi characters detected (lowered threshold to 5%)
+  if (tamilCount > text.length * 0.05) return 'TA'; // Tamil
+  if (hindiCount > text.length * 0.05) return 'HI'; // Hindi
 
   // Default to English
   return 'EN';
