@@ -190,17 +190,6 @@ const INITIAL_ROLES: Record<string, RoleApproval> = {
   Editor: { name: '', status: 'Pending Approval', feedback: '', timestamp: '' },
 };
 
-const BRAIN_REGIONS = [
-  { region: 'FFA', name: 'Face Fusiform Area', scenes: [1, 3, 5], color: '#3B82F6' },
-  { region: 'MT/V5', name: 'Motion Area', scenes: [1, 2, 3, 5], color: '#EF4444' },
-  { region: 'VWFA', name: 'Visual Word Form', scenes: [1, 2, 3, 4, 5], color: '#22C55E' },
-  { region: 'A1', name: 'Auditory Cortex', scenes: [1, 2, 3, 4, 5], color: '#8B5CF6' },
-  { region: 'EBA', name: 'Body/Hand Area', scenes: [1, 2, 3], color: '#F59E0B' },
-  { region: 'LOC', name: 'Object Area', scenes: [1, 2, 3, 4], color: '#EC4899' },
-  { region: 'DMN', name: 'Default Mode', scenes: [1, 5], color: '#06D6A0' },
-  { region: 'Prefrontal', name: 'Executive/Numbers', scenes: [2, 4], color: '#0EA5E9' },
-  { region: 'TPO', name: 'Multisensory', scenes: [1, 3], color: '#F97316' },
-];
 
 const easeOut = [0.4, 0, 0.2, 1] as [number, number, number, number];
 const spring = [0.34, 1.56, 0.64, 1] as [number, number, number, number];
@@ -697,70 +686,6 @@ function RoleApprovalCard({
   );
 }
 
-/* ═══════════════════════════════════════════════════════════════════ */
-/*  BRAIN REGION COVERAGE MATRIX                                       */
-/* ═══════════════════════════════════════════════════════════════════ */
-
-function BrainRegionMatrix() {
-  const totalScenes = 5;
-  const coverage = useMemo(() => {
-    return BRAIN_REGIONS.map(r => ({
-      ...r,
-      pct: Math.round((r.scenes.length / totalScenes) * 100),
-    }));
-  }, []);
-
-  const avgCoverage = Math.round(coverage.reduce((s, r) => s + r.pct, 0) / coverage.length);
-
-  return (
-    <motion.div variants={fadeUp}>
-      <Card phaseAccent={VIOLET} className="p-5">
-        <div className="flex items-center gap-2 mb-4">
-          <Brain size={18} style={{ color: VIOLET }} />
-          <h3 className="text-lg font-semibold text-text-primary">Brain Region Coverage</h3>
-          <span className="ml-auto text-sm font-medium text-text-secondary">Avg: <strong className="text-text-primary">{avgCoverage}%</strong></span>
-        </div>
-
-        <div className="space-y-2.5">
-          {coverage.map(r => (
-            <div key={r.region} className="flex items-center gap-3">
-              <div className="w-16 text-right flex-shrink-0">
-                <span className="text-xs font-mono font-bold" style={{ color: r.color }}>{r.region}</span>
-              </div>
-              <div className="w-32 text-left flex-shrink-0 hidden sm:block">
-                <span className="text-xs text-text-secondary">{r.name}</span>
-              </div>
-              <div className="flex gap-1.5 flex-1">
-                {Array.from({ length: totalScenes }, (_, i) => i + 1).map(scene => (
-                  <div
-                    key={scene}
-                    className="w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-bold border transition-all"
-                    style={{
-                      backgroundColor: r.scenes.includes(scene) ? `${r.color}25` : 'transparent',
-                      borderColor: r.scenes.includes(scene) ? `${r.color}60` : '#2A2E38',
-                      color: r.scenes.includes(scene) ? r.color : '#5C6370',
-                    }}
-                  >
-                    {scene}
-                  </div>
-                ))}
-              </div>
-              <div className="w-10 text-right flex-shrink-0">
-                <span className="text-xs text-text-tertiary">{r.pct}%</span>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Legend */}
-        <div className="mt-4 pt-3 border-t border-border-subtle flex items-center gap-4 text-[10px] text-text-tertiary">
-          <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-success/30 border border-success/60" /> Active</span>
-          <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full border border-border-subtle" /> Inactive</span>
-        </div>
-      </Card>
-    </motion.div>
-  );
-}
 
 /* ═══════════════════════════════════════════════════════════════════ */
 /*  MAIN: Phase4                                                       */
@@ -1394,12 +1319,6 @@ export default function Phase4() {
           </div>
         </motion.div>
 
-        {/* \u2550\u2550\u2550\u2550\u2550\u2550\u2550 BRAIN REGION COVERAGE \u2550\u2550\u2550\u2550\u2550\u2550\u2550 */}
-        <div className="mb-10">
-          <motion.div variants={staggerContainer} initial="hidden" animate="show">
-            <BrainRegionMatrix />
-          </motion.div>
-        </div>
 
         {/* \u2550\u2550\u2550\u2550\u2550\u2550\u2550 ROLE APPROVAL PANEL \u2550\u2550\u2550\u2550\u2550\u2550\u2550 */}
         <motion.div
