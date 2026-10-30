@@ -1,3 +1,23 @@
+// Language detection function
+function detectLanguage(text) {
+  if (!text) return 'EN';
+
+  // Tamil Unicode range: U+0B80 to U+0BFF
+  const tamilRegex = /[஀-௿]/g;
+  const tamilCount = (text.match(tamilRegex) || []).length;
+
+  // Hindi Unicode range: U+0900 to U+097F
+  const hindiRegex = /[ऀ-ॿ]/g;
+  const hindiCount = (text.match(hindiRegex) || []).length;
+
+  // If significant Tamil characters detected
+  if (tamilCount > text.length * 0.1) return 'TA'; // Tamil
+  if (hindiCount > text.length * 0.1) return 'HI'; // Hindi
+
+  // Default to English
+  return 'EN';
+}
+
 // Vercel Serverless Function for AI Screenplay Validation
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -24,9 +44,17 @@ export default async function handler(req, res) {
       )
       .join('\n\n');
 
+    // Detect language from screenplay content
+    const detectedLanguage = detectLanguage(sceneSummary);
+    const languageName = {
+      'TA': 'Tamil',
+      'HI': 'Hindi',
+      'EN': 'English'
+    }[detectedLanguage] || 'English';
+
     const prompt = `You are a viral video expert. Validate this screenplay against key metrics for viral success. Analyze each check and return results as JSON.
 
-IMPORTANT: The screenplay is in a specific language. Respond in the EXACT SAME LANGUAGE as the screenplay input. All check names, evidence, and suggested fixes must be in the original language.
+CRITICAL INSTRUCTION: This screenplay is written in ${languageName}. You MUST respond in ${languageName} ONLY. All check names, evidence, and suggested fixes must be in ${languageName}.
 
 Screenplay:
 ${sceneSummary}
@@ -56,7 +84,7 @@ Check these 10 key areas:
 9. ML01 - Works without sound (captions/visuals)
 10. REF01 - Follows proven viral patterns
 
-All responses must be in the same language as the screenplay.`;
+ALL RESPONSES MUST BE IN ${languageName.toUpperCase()}. No translations or mixing of languages.`;
 
     const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',

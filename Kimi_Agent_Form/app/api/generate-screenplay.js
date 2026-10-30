@@ -1,3 +1,23 @@
+// Language detection function
+function detectLanguage(text) {
+  if (!text) return 'EN';
+
+  // Tamil Unicode range: U+0B80 to U+0BFF
+  const tamilRegex = /[஀-௿]/g;
+  const tamilCount = (text.match(tamilRegex) || []).length;
+
+  // Hindi Unicode range: U+0900 to U+097F
+  const hindiRegex = /[ऀ-ॿ]/g;
+  const hindiCount = (text.match(hindiRegex) || []).length;
+
+  // If significant Tamil characters detected
+  if (tamilCount > text.length * 0.1) return 'TA'; // Tamil
+  if (hindiCount > text.length * 0.1) return 'HI'; // Hindi
+
+  // Default to English
+  return 'EN';
+}
+
 // Vercel Serverless Function for AI Screenplay Generation
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -25,11 +45,20 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: 'API key not configured' });
     }
 
+    // Detect language from topic and context
+    const allText = `${topic} ${whyTheyCare || ''} ${proof || ''}`;
+    const detectedLanguage = detectLanguage(allText);
+    const languageName = {
+      'TA': 'Tamil',
+      'HI': 'Hindi',
+      'EN': 'English'
+    }[detectedLanguage] || 'English';
+
     const durationPerScene = Math.ceil(lengthSec / 5);
 
     const prompt = `You are a viral video director. Create a 5-scene screenplay for a ${lengthSec}s video about: "${topic}"
 
-IMPORTANT: The user's content is in a specific language. Respond in the EXACT SAME LANGUAGE as the input content. Do not translate. Preserve the original language throughout the screenplay, dialogue, descriptions, and all fields.
+CRITICAL INSTRUCTION: This content is written in ${languageName}. You MUST respond in ${languageName} ONLY. Do not translate. Preserve the original language throughout the screenplay, all dialogue, descriptions, and every field.
 
 Context:
 - Why people care: ${whyTheyCare || 'Unknown'}
@@ -57,7 +86,7 @@ Return ONLY valid JSON (no markdown) with this exact structure:
   ...repeat for scenes 2-5, incrementing timings by ${durationPerScene}
 ]
 
-All text must be in the same language as the input topic and context.`;
+ALL TEXT MUST BE IN ${languageName.toUpperCase()}. No English translations or mixing of languages.`;
 
     const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',

@@ -1,3 +1,23 @@
+// Language detection function
+function detectLanguage(text) {
+  if (!text) return 'EN';
+
+  // Tamil Unicode range: U+0B80 to U+0BFF
+  const tamilRegex = /[஀-௿]/g;
+  const tamilCount = (text.match(tamilRegex) || []).length;
+
+  // Hindi Unicode range: U+0900 to U+097F
+  const hindiRegex = /[ऀ-ॿ]/g;
+  const hindiCount = (text.match(hindiRegex) || []).length;
+
+  // If significant Tamil characters detected
+  if (tamilCount > text.length * 0.1) return 'TA'; // Tamil
+  if (hindiCount > text.length * 0.1) return 'HI'; // Hindi
+
+  // Default to English
+  return 'EN';
+}
+
 // Vercel Serverless Function for AI Nugget Extraction
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -17,9 +37,17 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: 'API key not configured' });
     }
 
+    // Detect language from research content
+    const detectedLanguage = detectLanguage(research);
+    const languageName = {
+      'TA': 'Tamil',
+      'HI': 'Hindi',
+      'EN': 'English'
+    }[detectedLanguage] || 'English';
+
     const prompt = `You are an expert viral video creator. Analyze this research and extract 3 compelling "nuggets" (viral hooks) that would make people stop scrolling.
 
-IMPORTANT: The user has written their content in a specific language. Respond in the EXACT SAME LANGUAGE as the input research. Do not translate. Preserve the original language throughout your response.
+CRITICAL INSTRUCTION: This content is written in ${languageName}. You MUST respond in ${languageName} ONLY. Do not translate to any other language. Preserve the original language throughout your response.
 
 Research Content:
 ${research}
@@ -36,7 +64,7 @@ For each nugget, return valid JSON with exactly this structure (no markdown, jus
   ...repeat 2 more times
 ]
 
-Return ONLY valid JSON, no other text. All text must be in the same language as the research input.`;
+Return ONLY valid JSON, no other text. ALL TEXT MUST BE IN ${languageName.toUpperCase()}.`;
 
     const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
