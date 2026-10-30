@@ -4,7 +4,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { research, language = 'EN' } = req.body;
+  const { research } = req.body;
 
   if (!research) {
     return res.status(400).json({ error: 'Research content required' });
@@ -18,6 +18,8 @@ export default async function handler(req, res) {
     }
 
     const prompt = `You are an expert viral video creator. Analyze this research and extract 3 compelling "nuggets" (viral hooks) that would make people stop scrolling.
+
+IMPORTANT: The user has written their content in a specific language. Respond in the EXACT SAME LANGUAGE as the input research. Do not translate. Preserve the original language throughout your response.
 
 Research Content:
 ${research}
@@ -34,7 +36,7 @@ For each nugget, return valid JSON with exactly this structure (no markdown, jus
   ...repeat 2 more times
 ]
 
-Return ONLY valid JSON, no other text.`;
+Return ONLY valid JSON, no other text. All text must be in the same language as the research input.`;
 
     const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',

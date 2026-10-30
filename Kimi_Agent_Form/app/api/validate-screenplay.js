@@ -26,6 +26,8 @@ export default async function handler(req, res) {
 
     const prompt = `You are a viral video expert. Validate this screenplay against key metrics for viral success. Analyze each check and return results as JSON.
 
+IMPORTANT: The screenplay is in a specific language. Respond in the EXACT SAME LANGUAGE as the screenplay input. All check names, evidence, and suggested fixes must be in the original language.
+
 Screenplay:
 ${sceneSummary}
 
@@ -52,7 +54,9 @@ Check these 10 key areas:
 7. PBL01 - Problem clearly identified
 8. CT01 - Call-to-action present and actionable
 9. ML01 - Works without sound (captions/visuals)
-10. REF01 - Follows proven viral patterns`;
+10. REF01 - Follows proven viral patterns
+
+All responses must be in the same language as the screenplay.`;
 
     const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',

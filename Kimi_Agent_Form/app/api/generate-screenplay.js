@@ -12,7 +12,6 @@ export default async function handler(req, res) {
     writtenHook,
     audioHook,
     lengthSec = 30,
-    language = 'EN',
   } = req.body;
 
   if (!topic) {
@@ -29,6 +28,8 @@ export default async function handler(req, res) {
     const durationPerScene = Math.ceil(lengthSec / 5);
 
     const prompt = `You are a viral video director. Create a 5-scene screenplay for a ${lengthSec}s video about: "${topic}"
+
+IMPORTANT: The user's content is in a specific language. Respond in the EXACT SAME LANGUAGE as the input content. Do not translate. Preserve the original language throughout the screenplay, dialogue, descriptions, and all fields.
 
 Context:
 - Why people care: ${whyTheyCare || 'Unknown'}
@@ -54,7 +55,9 @@ Return ONLY valid JSON (no markdown) with this exact structure:
     "editMarkers": [{"time": "0.0s", "event": "Edit event"}]
   },
   ...repeat for scenes 2-5, incrementing timings by ${durationPerScene}
-]`;
+]
+
+All text must be in the same language as the input topic and context.`;
 
     const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
