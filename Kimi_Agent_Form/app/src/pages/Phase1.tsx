@@ -258,10 +258,9 @@ export default function Phase1() {
       selectedNugget !== null &&
       whyNugget.length > 0 &&
       niche && subNiche && thePoint && whyTheyCare && theProof &&
-      actionableTakeaway && timeToValue && contentStyle &&
-      refUrl && copyElement && copyDescription
+      actionableTakeaway && timeToValue && contentStyle
     );
-  }, [date, creator, actor, company, platform, estimatedLength, aspectRatio, actorCount, language, research, selectedNugget, whyNugget, niche, subNiche, thePoint, whyTheyCare, theProof, actionableTakeaway, timeToValue, contentStyle, refUrl, copyElement, copyDescription]);
+  }, [date, creator, actor, company, platform, estimatedLength, aspectRatio, actorCount, language, research, selectedNugget, whyNugget, niche, subNiche, thePoint, whyTheyCare, theProof, actionableTakeaway, timeToValue, contentStyle]);
 
   /* --- handlers --- */
   const handleExtractNuggets = async () => {
