@@ -32,6 +32,7 @@ export default async function handler(req, res) {
     writtenHook,
     audioHook,
     lengthSec = 30,
+    language,
   } = req.body;
 
   if (!topic) {
@@ -129,7 +130,7 @@ ALL TEXT MUST BE IN ${languageName.toUpperCase()}. No English translations or mi
       metadata: {
         topic,
         duration: lengthSec,
-        language,
+        language: detectedLanguage,
         sceneCount: 5,
       },
     });
