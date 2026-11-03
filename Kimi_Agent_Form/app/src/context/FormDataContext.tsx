@@ -60,6 +60,12 @@ export interface FormData {
   screenplay: SceneBeat[] | null;
   // Which saved project this session corresponds to (null until first save)
   projectId: string | null;
+  // Phase 2 — Structure (content type, format/structure combo, CTA, hook edits)
+  phase2ContentType: string;
+  phase2Platform: string;
+  phase2SelectedCombo: string | null;
+  phase2CtaText: string;
+  phase2Hooks: Record<string, { status: string; content: string; rating: string; visualQuality?: string }> | null;
 }
 
 interface FormDataContextValue {
@@ -100,6 +106,11 @@ const defaultData: FormData = {
   copyDescription: '',
   screenplay: null,
   projectId: null,
+  phase2ContentType: '',
+  phase2Platform: '',
+  phase2SelectedCombo: null,
+  phase2CtaText: '',
+  phase2Hooks: null,
 };
 
 const FormDataContext = createContext<FormDataContextValue | undefined>(undefined);

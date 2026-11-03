@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Layout } from '@/components/Layout';
@@ -183,7 +183,7 @@ interface HookState {
 export default function Phase2() {
   const navigate = useNavigate();
   /* ── Data carried over from Phase 1 ── */
-  const { data } = useFormData();
+  const { data, updateData } = useFormData();
   const chosenNugget =
     data.selectedNuggetIndex !== null && data.nuggetOptions
       ? data.nuggetOptions[data.selectedNuggetIndex]
@@ -197,25 +197,44 @@ export default function Phase2() {
       ? `Demonstrate the ${data.niche} point visually`
       : 'No topic yet — complete Phase 1 first';
 
-  /* ── State ── */
-  const [contentType, setContentType] = useState('educational');
+  /* ── State — seeded from anything already saved for Phase 2, so revisits don't lose edits ── */
+  const [contentType, setContentType] = useState(data.phase2ContentType || 'educational');
   const [aiRecommendedType] = useState('educational');
-  const [platform, setPlatform] = useState<PlatformOption>('TikTok');
-  const [selectedCombo, setSelectedCombo] = useState<string | null>(null);
+  const [platform, setPlatform] = useState<PlatformOption>(
+    (data.phase2Platform as PlatformOption) || (data.platform as PlatformOption) || 'TikTok'
+  );
+  const [selectedCombo, setSelectedCombo] = useState<string | null>(data.phase2SelectedCombo || null);
   const [ctaText, setCtaText] = useState(
-    data.niche ? `Follow for more ${data.niche} tips` : 'Follow for more'
+    data.phase2CtaText || (data.niche ? `Follow for more ${data.niche} tips` : 'Follow for more')
   );
 
-  /* ── Hook state — seeded from the real Phase 1 topic, not a fixed example ── */
-  const [hooks, setHooks] = useState<Record<string, HookState>>({
-    visual: { status: 'pending', content: derivedVisualHook, original: derivedVisualHook, rating: 'GOOD', visualQuality: 'GOOD' },
-    written: { status: 'pending', content: derivedWrittenHook, original: derivedWrittenHook, rating: 'GOOD' },
-    audio: { status: 'pending', content: derivedAudioHook, original: derivedAudioHook, rating: 'GOOD' },
-  });
+  /* ── Hook state — seeded from saved Phase 2 edits if present, else the real Phase 1 topic ── */
+  const [hooks, setHooks] = useState<Record<string, HookState>>(
+    (data.phase2Hooks as Record<string, HookState> | null) || {
+      visual: { status: 'pending', content: derivedVisualHook, original: derivedVisualHook, rating: 'GOOD', visualQuality: 'GOOD' },
+      written: { status: 'pending', content: derivedWrittenHook, original: derivedWrittenHook, rating: 'GOOD' },
+      audio: { status: 'pending', content: derivedAudioHook, original: derivedAudioHook, rating: 'GOOD' },
+    }
+  );
 
   const [editText, setEditText] = useState<Record<string, string>>({});
 
   const allHooksApproved = Object.values(hooks).every((h) => h.status === 'approved');
+
+  /* ── Autosave: persist Phase 2 selections so they survive navigation/refresh ── */
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      updateData({
+        phase2ContentType: contentType,
+        phase2Platform: platform,
+        phase2SelectedCombo: selectedCombo,
+        phase2CtaText: ctaText,
+        phase2Hooks: hooks,
+      });
+    }, 500);
+    return () => clearTimeout(timeout);
+  }, [contentType, platform, selectedCombo, ctaText, hooks]);
 
   /* ── Derived data ── */
   const currentConfig = CORRELATION_MAP[contentType];
@@ -811,7 +830,16 @@ export default function Phase2() {
           <button
             disabled={!allHooksApproved}
             onClick={() => {
-              if (data.projectId) saveProject(data, 3, data.projectId);
+              const snapshot = {
+                ...data,
+                phase2ContentType: contentType,
+                phase2Platform: platform,
+                phase2SelectedCombo: selectedCombo,
+                phase2CtaText: ctaText,
+                phase2Hooks: hooks,
+              };
+              updateData(snapshot);
+              if (data.projectId) saveProject(snapshot, 3, data.projectId);
               navigate('/phase/3');
             }}
             className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium text-text-inverse transition-opacity ${

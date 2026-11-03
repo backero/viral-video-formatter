@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -231,6 +231,28 @@ export default function Phase1() {
 
   const [toast, setToast] = useState<string | null>(null);
 
+  /* --- autosave: push local field state into shared context (and localStorage) --- */
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      updateData({
+        date, creator, actor, company, platform, estimatedLength, aspectRatio,
+        actorCount, language, research,
+        selectedNuggetIndex: selectedNugget,
+        niche, subNiche, thePoint, whyTheyCare, theProof, actionableTakeaway,
+        whyNugget, timeToValue, contentStyle, selfChecks, validationChecks,
+        refUrl, copyElement, copyDescription,
+      });
+    }, 500);
+    return () => clearTimeout(timeout);
+  }, [
+    date, creator, actor, company, platform, estimatedLength, aspectRatio,
+    actorCount, language, research, selectedNugget,
+    niche, subNiche, thePoint, whyTheyCare, theProof, actionableTakeaway,
+    whyNugget, timeToValue, contentStyle, selfChecks, validationChecks,
+    refUrl, copyElement, copyDescription,
+  ]);
+
   /* --- computed --- */
   const researchCharCount = research.length;
   const isResearchReady = researchCharCount > 200;
@@ -261,6 +283,27 @@ export default function Phase1() {
       actionableTakeaway && timeToValue && contentStyle
     );
   }, [date, creator, actor, company, platform, estimatedLength, aspectRatio, actorCount, language, research, selectedNugget, whyNugget, niche, subNiche, thePoint, whyTheyCare, theProof, actionableTakeaway, timeToValue, contentStyle]);
+
+  const missingFields = useMemo(() => {
+    const missing: string[] = [];
+    if (!creator) missing.push('Content Creator');
+    if (!actor) missing.push('On-Camera Actor');
+    if (!company) missing.push('Brand / Company');
+    if (!platform) missing.push('Platform');
+    if (!estimatedLength) missing.push('Estimated Length');
+    if (!(research.length > 200)) missing.push('Raw Research Dump (200+ characters)');
+    if (selectedNugget === null) missing.push('One Point Selector (pick a nugget)');
+    if (!(whyNugget.length > 0)) missing.push('Why This Nugget');
+    if (!niche) missing.push('Niche');
+    if (!subNiche) missing.push('Sub-Niche');
+    if (!thePoint) missing.push('The Point');
+    if (!whyTheyCare) missing.push('Why They Care');
+    if (!theProof) missing.push('The Proof');
+    if (!actionableTakeaway) missing.push('Actionable Takeaway');
+    if (!timeToValue) missing.push('Time to Value');
+    if (!contentStyle) missing.push('Content Style');
+    return missing;
+  }, [creator, actor, company, platform, estimatedLength, research, selectedNugget, whyNugget, niche, subNiche, thePoint, whyTheyCare, theProof, actionableTakeaway, timeToValue, contentStyle]);
 
   /* --- handlers --- */
   const handleExtractNuggets = async () => {
@@ -1269,29 +1312,37 @@ export default function Phase1() {
         {/* ============================================================ */}
         <motion.div
           variants={cardVariants}
-          className="mt-10 mb-16 flex flex-col sm:flex-row items-center justify-end gap-4"
+          className="mt-10 mb-16 flex flex-col items-end gap-3"
         >
-          <Button
-            variant="outline"
-            onClick={handleSaveDraft}
-            className="w-full sm:w-auto text-sm font-medium font-medium border-border-medium text-text-secondary hover:bg-bg-tertiary hover:text-text-primary"
-          >
-            <Save size={16} className="mr-1.5" />
-            Save Draft
-          </Button>
+          {!isFormValid && missingFields.length > 0 && (
+            <div className="w-full sm:w-auto text-xs text-text-tertiary text-right">
+              <span className="text-error">Still missing:</span> {missingFields.join(', ')}
+            </div>
+          )}
+          <div className="flex flex-col sm:flex-row items-center justify-end gap-4 w-full">
+            <Button
+              variant="outline"
+              onClick={handleSaveDraft}
+              className="w-full sm:w-auto text-sm font-medium font-medium border-border-medium text-text-secondary hover:bg-bg-tertiary hover:text-text-primary"
+            >
+              <Save size={16} className="mr-1.5" />
+              Save Draft
+            </Button>
 
-          <Button
-            onClick={handleSubmit}
-            disabled={!isFormValid}
-            className="w-full sm:w-auto text-sm font-medium font-medium disabled:opacity-40 disabled:cursor-not-allowed"
-            style={
-              isFormValid
-                ? { backgroundColor: ACCENT, color: '#0B0C0F' }
-                : undefined
-            }
-          >
-            Generate Structure &rarr;
-          </Button>
+            <Button
+              onClick={handleSubmit}
+              disabled={!isFormValid}
+              title={!isFormValid ? `Still missing: ${missingFields.join(', ')}` : ''}
+              className="w-full sm:w-auto text-sm font-medium font-medium disabled:opacity-40 disabled:cursor-not-allowed"
+              style={
+                isFormValid
+                  ? { backgroundColor: ACCENT, color: '#0B0C0F' }
+                  : undefined
+              }
+            >
+              Generate Structure &rarr;
+            </Button>
+          </div>
         </motion.div>
       </motion.div>
 

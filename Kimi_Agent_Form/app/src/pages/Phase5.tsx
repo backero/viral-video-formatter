@@ -465,6 +465,16 @@ export default function Phase5() {
     window.print();
   }, []);
 
+  /* ---- Print just one section (used by each tab's own Print/PDF button,
+     so "Print / PDF" on the Script tab prints only the script, not the full pack) ---- */
+  const printSection = useCallback((id: string) => {
+    setPrintFilter(id);
+    setTimeout(() => {
+      window.print();
+      setTimeout(() => setPrintFilter('all'), 500);
+    }, 100);
+  }, []);
+
   /* ---- Actor Brief Text ---- */
   const actorBriefText = useMemo(() => {
     const lines = [
@@ -712,7 +722,7 @@ export default function Phase5() {
               <p className="text-sm text-text-secondary">{activeMeta.actor} &middot; {activeMeta.runtime} &middot; {activeMeta.scenes} scenes</p>
             </div>
           </div>
-          <ActionBar copyText={actorBriefText} onPrint={handlePrint} />
+          <ActionBar copyText={actorBriefText} onPrint={() => printSection('actor')} />
         </div>
         <ActorBriefInner />
       </div>
@@ -791,7 +801,7 @@ export default function Phase5() {
               <p className="text-sm text-text-secondary">{activeMeta.aspectRatio} &middot; {activeMeta.platform}</p>
             </div>
           </div>
-          <ActionBar copyText={cameraSheetText} onPrint={handlePrint} />
+          <ActionBar copyText={cameraSheetText} onPrint={() => printSection('camera')} />
         </div>
         <CameraSheetInner />
       </div>
@@ -892,7 +902,7 @@ export default function Phase5() {
               <p className="text-sm text-text-secondary">30s runtime &middot; 4 cuts &middot; {timelineEvents.length} events</p>
             </div>
           </div>
-          <ActionBar copyText={editTimelineText} onPrint={handlePrint} />
+          <ActionBar copyText={editTimelineText} onPrint={() => printSection('edit')} />
         </div>
         <EditTimelineInner />
       </div>
@@ -941,7 +951,7 @@ export default function Phase5() {
               <p className="text-sm text-text-secondary">{activeMeta.words} words &middot; {activeMeta.scenes} scenes &middot; {activeMeta.runtime}</p>
             </div>
           </div>
-          <ActionBar copyText={cleanScriptText} onPrint={handlePrint} />
+          <ActionBar copyText={cleanScriptText} onPrint={() => printSection('script')} />
         </div>
         <CleanScriptInner />
       </div>
@@ -995,7 +1005,7 @@ export default function Phase5() {
               <p className="text-sm text-text-secondary">Reference for production team</p>
             </div>
           </div>
-          <ActionBar copyText={goldenRulesText} onPrint={handlePrint} />
+          <ActionBar copyText={goldenRulesText} onPrint={() => printSection('golden-rules')} />
         </div>
         <GoldenRulesInner />
       </div>

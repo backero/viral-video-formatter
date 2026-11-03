@@ -160,9 +160,9 @@ export default function Phase3() {
         topic: effectiveTopic,
         whyTheyCare: data.whyTheyCare || chosenNugget?.whyTheyCare,
         proof: data.theProof || chosenNugget?.proof,
-        visualHook: chosenNugget?.title,
-        writtenHook: chosenNugget?.point,
-        audioHook: chosenNugget?.whyItWorks,
+        visualHook: data.phase2Hooks?.visual?.content || chosenNugget?.title,
+        writtenHook: data.phase2Hooks?.written?.content || chosenNugget?.point,
+        audioHook: data.phase2Hooks?.audio?.content || chosenNugget?.whyItWorks,
         lengthSec: Number(data.estimatedLength?.match(/\d+/)?.[0]) || 30,
         language: data.language,
       }),
@@ -204,9 +204,18 @@ export default function Phase3() {
   const language = data.language || 'EN';
 
   /* Auto-derived from Phase 2 */
-  const contentType = 'Educational';
-  const structureName = 'Step-by-Step';
-  const formatSkin = 'Demonstration';
+  const CONTENT_TYPE_LABELS: Record<string, string> = {
+    educational: 'Educational',
+    entertaining_education: 'Entertaining Education',
+    storytelling: 'Storytelling',
+    authority: 'Authority / Trust',
+    personal: 'Personal / Relatable',
+    trending: 'Trending / Entertainment',
+  };
+  const contentType = CONTENT_TYPE_LABELS[data.phase2ContentType] || 'Educational';
+  const [formatSkin, structureName] = data.phase2SelectedCombo
+    ? (data.phase2SelectedCombo.split('|') as [string, string])
+    : ['Demonstration', 'Step-by-Step'];
   const contentComplexity = 'mid';
   const autoFormatSkin = 'Whiteboard / ABR Hybrid';
   const actorName = actorCount >= 1 ? (data.actor || 'ACTOR').toUpperCase() : 'VOICEOVER';

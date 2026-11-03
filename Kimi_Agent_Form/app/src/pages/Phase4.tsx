@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useEffect } from 'react';
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -173,8 +173,86 @@ const CATEGORY_ICONS: Record<Category, React.ReactNode> = {
 /*  THE 52 CHECKS - VALIDATION DATA                                    */
 /* ═══════════════════════════════════════════════════════════════════ */
 
-// Start with empty checks - all validation comes from API response
-const INITIAL_CHECKS: CheckItem[] = [];
+// Full catalog of 58 checks (id/name/category/severity). Every check starts N/A —
+// runRealValidation() overwrites result/evidence/suggestedFix/scenesAffected with the
+// real AI verdict for *your* screenplay. Nothing here is placeholder content.
+const INITIAL_CHECKS: CheckItem[] = [
+  // === Golden Rules (18) ===
+  { id: 'GR01', name: 'Demonstration-First Dialogue', category: 'Golden Rule', severity: 'Major', result: 'N/A', evidence: 'Awaiting validation...', overridden: false },
+  { id: 'GR02', name: 'Action-to-Dialogue Ratio >= 2.0', category: 'Golden Rule', severity: 'Major', result: 'N/A', evidence: 'Awaiting validation...', overridden: false },
+  { id: 'GR03', name: 'Silent-Runtime Quota by Format', category: 'Golden Rule', severity: 'Major', result: 'N/A', evidence: 'Awaiting validation...', overridden: false },
+  { id: 'GR04', name: 'Hook Parseable Muted (Full Video)', category: 'Golden Rule', severity: 'Critical', result: 'N/A', evidence: 'Awaiting validation...', overridden: false },
+  { id: 'GR05', name: 'Broad -> Narrow -> Niche', category: 'Golden Rule', severity: 'Major', result: 'N/A', evidence: 'Awaiting validation...', overridden: false },
+  { id: 'GR06', name: "Show, Don't Tell", category: 'Golden Rule', severity: 'Major', result: 'N/A', evidence: 'Awaiting validation...', overridden: false },
+  { id: 'GR07', name: 'Visual Change Every 2 Seconds', category: 'Golden Rule', severity: 'Major', result: 'N/A', evidence: 'Awaiting validation...', overridden: false },
+  { id: 'GR08', name: 'Silent Moments Mandatory', category: 'Golden Rule', severity: 'Minor', result: 'N/A', evidence: 'Awaiting validation...', overridden: false },
+  { id: 'GR09', name: 'Bridge Words Between Scenes', category: 'Golden Rule', severity: 'Minor', result: 'N/A', evidence: 'Awaiting validation...', overridden: false },
+  { id: 'GR10', name: 'Action-Integrated Dialogue', category: 'Golden Rule', severity: 'Minor', result: 'N/A', evidence: 'Awaiting validation...', overridden: false },
+  { id: 'GR11', name: 'Tri-Modal Convergence in 0-1.5s', category: 'Golden Rule', severity: 'Critical', result: 'N/A', evidence: 'Awaiting validation...', overridden: false },
+  { id: 'GR12', name: 'Research Fidelity Carry-Over', category: 'Golden Rule', severity: 'Critical', result: 'N/A', evidence: 'Awaiting validation...', overridden: false },
+  { id: 'GR13', name: 'Studio-Realistic Scope', category: 'Golden Rule', severity: 'Major', result: 'N/A', evidence: 'Awaiting validation...', overridden: false },
+  { id: 'GR14', name: 'Caption Coverage = 100%', category: 'Golden Rule', severity: 'Critical', result: 'N/A', evidence: 'Awaiting validation...', overridden: false },
+  { id: 'GR15', name: 'One Peak Per Video', category: 'Golden Rule', severity: 'Major', result: 'N/A', evidence: 'Awaiting validation...', overridden: false },
+  { id: 'GR16', name: 'Hook > Script > Format > Edit Priority', category: 'Golden Rule', severity: 'Minor', result: 'N/A', evidence: 'Awaiting validation...', overridden: false },
+  { id: 'GR17', name: '5x Outlier Match', category: 'Golden Rule', severity: 'Minor', result: 'N/A', evidence: 'Awaiting validation...', overridden: false },
+  { id: 'GR18', name: 'Mobile-First Safe Zone Compliance', category: 'Golden Rule', severity: 'Major', result: 'N/A', evidence: 'Awaiting validation...', overridden: false },
+
+  // === Quality Gate (10) ===
+  { id: 'QG01', name: 'Scroll-Stop in 0.5s', category: 'Quality Gate', severity: 'Critical', result: 'N/A', evidence: 'Awaiting validation...', overridden: false },
+  { id: 'QG02', name: 'Value in First 3-5s', category: 'Quality Gate', severity: 'Critical', result: 'N/A', evidence: 'Awaiting validation...', overridden: false },
+  { id: 'QG03', name: 'Natural When Read Aloud', category: 'Quality Gate', severity: 'Major', result: 'N/A', evidence: 'Awaiting validation...', overridden: false },
+  { id: 'QG04', name: '10-Year-Old Understands', category: 'Quality Gate', severity: 'Major', result: 'N/A', evidence: 'Awaiting validation...', overridden: false },
+  { id: 'QG05', name: 'Cameraman Knows What to Do', category: 'Quality Gate', severity: 'Major', result: 'N/A', evidence: 'Awaiting validation...', overridden: false },
+  { id: 'QG06', name: 'Actor Knows Expression/Pace/Energy', category: 'Quality Gate', severity: 'Major', result: 'N/A', evidence: 'Awaiting validation...', overridden: false },
+  { id: 'QG07', name: 'Editor Knows Where Every Cut Happens', category: 'Quality Gate', severity: 'Major', result: 'N/A', evidence: 'Awaiting validation...', overridden: false },
+  { id: 'QG08', name: 'Exactly One CTA <=5 Words at End', category: 'Quality Gate', severity: 'Critical', result: 'N/A', evidence: 'Awaiting validation...', overridden: false },
+  { id: 'QG09', name: 'Muted Viewer Understands Everything', category: 'Quality Gate', severity: 'Critical', result: 'N/A', evidence: 'Awaiting validation...', overridden: false },
+  { id: 'QG10', name: 'Visual Change Every 2 Seconds (Quality)', category: 'Quality Gate', severity: 'Major', result: 'N/A', evidence: 'Awaiting validation...', overridden: false },
+
+  // === Neuroscience (8) ===
+  { id: 'NS01', name: 'Brain Region Coverage Completeness', category: 'Neuroscience', severity: 'Major', result: 'N/A', evidence: 'Awaiting validation...', overridden: false },
+  { id: 'NS02', name: 'Multimodal Convergence Density', category: 'Neuroscience', severity: 'Major', result: 'N/A', evidence: 'Awaiting validation...', overridden: false },
+  { id: 'NS03', name: 'Hemodynamic Delay Alignment', category: 'Neuroscience', severity: 'Minor', result: 'N/A', evidence: 'Awaiting validation...', overridden: false },
+  { id: 'NS04', name: 'DMN (Self-Reference) Density', category: 'Neuroscience', severity: 'Minor', result: 'N/A', evidence: 'Awaiting validation...', overridden: false },
+  { id: 'NS05', name: 'VWFA Stimulation Density', category: 'Neuroscience', severity: 'Minor', result: 'N/A', evidence: 'Awaiting validation...', overridden: false },
+  { id: 'NS06', name: 'Auditory Cortex Onset Compliance', category: 'Neuroscience', severity: 'Critical', result: 'N/A', evidence: 'Awaiting validation...', overridden: false },
+  { id: 'NS07', name: 'Variable-Pace Prosody', category: 'Neuroscience', severity: 'Minor', result: 'N/A', evidence: 'Awaiting validation...', overridden: false },
+  { id: 'NS08', name: 'Hook Visual Hierarchy in 0.5s', category: 'Neuroscience', severity: 'Critical', result: 'N/A', evidence: 'Awaiting validation...', overridden: false },
+
+  // === Staccato (6) ===
+  { id: 'SA01', name: 'Beat Length <= 8 Words', category: 'Staccato', severity: 'Major', result: 'N/A', evidence: 'Awaiting validation...', overridden: false },
+  { id: 'SA02', name: 'No Conjunctions Between Beats', category: 'Staccato', severity: 'Minor', result: 'N/A', evidence: 'Awaiting validation...', overridden: false },
+  { id: 'SA03', name: '5th-Grade Readability', category: 'Staccato', severity: 'Major', result: 'N/A', evidence: 'Awaiting validation...', overridden: false },
+  { id: 'SA04', name: 'You/Your Density', category: 'Staccato', severity: 'Minor', result: 'N/A', evidence: 'Awaiting validation...', overridden: false },
+  { id: 'SA05', name: 'Forbidden Words Absent', category: 'Staccato', severity: 'Major', result: 'N/A', evidence: 'Awaiting validation...', overridden: false },
+  { id: 'SA06', name: 'Pronunciation Notes for Technical Terms', category: 'Staccato', severity: 'Info', result: 'N/A', evidence: 'Awaiting validation...', overridden: false },
+
+  // === PBL (5) ===
+  { id: 'PBL01', name: 'SEE / READ / HEAR Triple-Hook Present', category: 'PBL', severity: 'Critical', result: 'N/A', evidence: 'Awaiting validation...', overridden: false },
+  { id: 'PBL02', name: 'Visual Hook >= Verbal Hook', category: 'PBL', severity: 'Major', result: 'N/A', evidence: 'Awaiting validation...', overridden: false },
+  { id: 'PBL03', name: 'Muted-Parse Test', category: 'PBL', severity: 'Critical', result: 'N/A', evidence: 'Awaiting validation...', overridden: false },
+  { id: 'PBL04', name: 'Broad-Hook Test', category: 'PBL', severity: 'Major', result: 'N/A', evidence: 'Awaiting validation...', overridden: false },
+  { id: 'PBL05', name: '4-Component Script Anatomy Present', category: 'PBL', severity: 'Minor', result: 'N/A', evidence: 'Awaiting validation...', overridden: false },
+
+  // === Studio (4) ===
+  { id: 'ST01', name: 'Actor Count vs Format Skin', category: 'Studio', severity: 'Major', result: 'N/A', evidence: 'Awaiting validation...', overridden: false },
+  { id: 'ST02', name: 'Lighting Setups <= Available', category: 'Studio', severity: 'Major', result: 'N/A', evidence: 'Awaiting validation...', overridden: false },
+  { id: 'ST03', name: 'B-roll Source Availability', category: 'Studio', severity: 'Major', result: 'N/A', evidence: 'Awaiting validation...', overridden: false },
+  { id: 'ST04', name: 'Custom Animation Lead Time', category: 'Studio', severity: 'Minor', result: 'N/A', evidence: 'Awaiting validation...', overridden: false },
+
+  // === CTA (4) ===
+  { id: 'CT01', name: 'CTA Freeze Frame', category: 'CTA', severity: 'Major', result: 'N/A', evidence: 'Awaiting validation...', overridden: false },
+  { id: 'CT02', name: 'CTA Text <= 5 Words', category: 'CTA', severity: 'Major', result: 'N/A', evidence: 'Awaiting validation...', overridden: false },
+  { id: 'CT03', name: 'Single CTA Only', category: 'CTA', severity: 'Major', result: 'N/A', evidence: 'Awaiting validation...', overridden: false },
+  { id: 'CT04', name: 'Export Specs Present', category: 'CTA', severity: 'Info', result: 'N/A', evidence: 'Awaiting validation...', overridden: false },
+
+  // === MultiLang (2) ===
+  { id: 'ML01', name: 'Language Tag Consistency', category: 'MultiLang', severity: 'Minor', result: 'N/A', evidence: 'Awaiting validation...', overridden: false },
+  { id: 'ML02', name: 'Caption Coverage Per Language', category: 'MultiLang', severity: 'Major', result: 'N/A', evidence: 'Awaiting validation...', overridden: false },
+
+  // === Reference (1) ===
+  { id: 'RV01', name: 'Reference Video Match Compliance', category: 'Reference', severity: 'Minor', result: 'N/A', evidence: 'Awaiting validation...', overridden: false },
+];
 
 const ROLE_CHECK_MAP: Record<string, string[]> = {
   'Content Lead': ['GR01','GR02','GR03','GR04','GR05','GR06','GR07','GR08','GR09','GR10','GR11','GR12','GR13','GR14','GR15','GR16','GR17','GR18','SA01','SA02','SA03','SA04','SA05','SA06','QG01','QG02','QG03','QG04','QG05','QG06','QG07','QG08','QG09','QG10'],
@@ -400,7 +478,17 @@ function SceneEditorCard({ scene, onChange }: { scene: EditableScene; onChange: 
 /* ═══════════════════════════════════════════════════════════════════ */
 
 function CheckCard({ check, onOverride, onApplyFix, isFixApplied }: { check: CheckItem; onOverride?: (id: string) => void; onApplyFix?: (id: string) => void; isFixApplied?: boolean }) {
-  const [expanded, setExpanded] = useState(check.result === 'FAIL');
+  // check.result starts as 'N/A' until the real validation response lands, so the
+  // mount-time initializer below never actually sees 'FAIL'. Auto-expand once, the
+  // first time this card settles into a real FAIL result.
+  const [expanded, setExpanded] = useState(false);
+  const autoExpandedRef = useRef(false);
+  useEffect(() => {
+    if (!autoExpandedRef.current && check.result === 'FAIL') {
+      autoExpandedRef.current = true;
+      setExpanded(true);
+    }
+  }, [check.result]);
 
   const borderColor = check.result === 'FAIL' && !check.overridden ? 'rgba(239,68,68,0.2)' : check.result === 'PASS' || check.overridden ? 'rgba(34,197,94,0.15)' : undefined;
   const leftBorder = check.result === 'FAIL' && !check.overridden ? '3px solid rgba(239,68,68,0.4)' : check.result === 'PASS' || check.overridden ? '3px solid rgba(34,197,94,0.25)' : '3px solid transparent';
@@ -695,26 +783,31 @@ export default function Phase4() {
   const navigate = useNavigate();
   const { data } = useFormData();
 
-  const realScenes: EditableScene[] | null = data.screenplay
-    ? data.screenplay.map((s: any) => ({
-        sceneNum: s.sceneNum,
-        name: s.name,
-        timingStart: s.timingStart,
-        timingEnd: s.timingEnd,
-        duration: s.duration,
-        dialogue: s.dialogue,
-        action: s.action,
-        cameraShot: s.camera?.shot || '',
-        cameraAngle: s.camera?.angle || '',
-        cameraMovement: s.camera?.movement || '',
-        actorExpression: s.actor?.expression || '',
-        actorEnergy: s.actor?.energy || 5,
-        actorPace: s.actor?.pace || '',
-        visual: s.visual,
-        audio: s.audio,
-        editMarkers: JSON.stringify(s.editMarkers || []),
-      }))
-    : null;
+  // Memoized on data.screenplay so its identity stays stable across re-renders —
+  // otherwise runRealValidation's identity changes every render, re-triggering the
+  // validation effect below and firing a duplicate, non-deterministic API call.
+  const realScenes: EditableScene[] | null = useMemo(() => (
+    data.screenplay
+      ? data.screenplay.map((s: any) => ({
+          sceneNum: s.sceneNum,
+          name: s.name,
+          timingStart: s.timingStart,
+          timingEnd: s.timingEnd,
+          duration: s.duration,
+          dialogue: s.dialogue,
+          action: s.action,
+          cameraShot: s.camera?.shot || '',
+          cameraAngle: s.camera?.angle || '',
+          cameraMovement: s.camera?.movement || '',
+          actorExpression: s.actor?.expression || '',
+          actorEnergy: s.actor?.energy || 5,
+          actorPace: s.actor?.pace || '',
+          visual: s.visual,
+          audio: s.audio,
+          editMarkers: JSON.stringify(s.editMarkers || []),
+        }))
+      : null
+  ), [data.screenplay]);
 
   const [scenes, setScenes] = useState<EditableScene[]>(realScenes ?? INITIAL_SCENES);
   const [checks, setChecks] = useState<CheckItem[]>(INITIAL_CHECKS);
@@ -738,6 +831,9 @@ export default function Phase4() {
         scenes: scenesToValidate.map(s => ({
           sceneNum: s.sceneNum, name: s.name, timingStart: s.timingStart, timingEnd: s.timingEnd,
           dialogue: s.dialogue, action: s.action, visual: s.visual, audio: s.audio,
+          cameraShot: s.cameraShot, cameraAngle: s.cameraAngle, cameraMovement: s.cameraMovement,
+          actorExpression: s.actorExpression, actorEnergy: s.actorEnergy, actorPace: s.actorPace,
+          editMarkers: s.editMarkers,
         })),
       }),
     })
@@ -749,7 +845,7 @@ export default function Phase4() {
         return res.json();
       })
       .then((json) => {
-        const resultsById: Record<string, { result: CheckResult; evidence: string; suggestedFix: string }> =
+        const resultsById: Record<string, { result: CheckResult; evidence: string; suggestedFix: string; scenesAffected?: number[] }> =
           Object.fromEntries(json.results.map((r: any) => [r.id, r]));
         setChecks((prev) =>
           prev.map((c) =>
@@ -759,6 +855,7 @@ export default function Phase4() {
                   result: resultsById[c.id].result,
                   evidence: resultsById[c.id].evidence,
                   suggestedFix: resultsById[c.id].suggestedFix || '',
+                  scenesAffected: resultsById[c.id].scenesAffected || [],
                 }
               : c
           )
@@ -1096,7 +1193,7 @@ export default function Phase4() {
           </div>
           <h1 className="text-3xl font-bold text-text-primary mb-2">Quality Validation</h1>
           <p className="text-base text-text-secondary">
-            52 automated checks against the screenplay. AI scored. Human decides.
+            58 automated checks against the screenplay. AI scored. Human decides.
           </p>
         </motion.div>
 
