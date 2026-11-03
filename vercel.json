@@ -3,10 +3,5 @@
   "outputDirectory": "Kimi_Agent_Form/app/dist",
   "env": {
     "VITE_API_URL": "/api"
-  },
-  "functions": {
-    "api/**/*.js": {
-      "runtime": "nodejs20.x"
-    }
   }
 }
