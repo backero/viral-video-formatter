@@ -2,10 +2,53 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import Anthropic from '@anthropic-ai/sdk';
+import { v4 as uuidv4 } from 'uuid';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import fs from 'fs/promises';
 
 const app = express();
 app.use(cors());
 app.use(express.json({ limit: '2mb' }));
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const contentDir = path.join(__dirname, 'content_store');
+const metricsFile = path.join(__dirname, 'share_metrics.json');
+
+// Initialize storage directories
+async function initializeStorage() {
+  try {
+    await fs.mkdir(contentDir, { recursive: true });
+    // Initialize metrics file if it doesn't exist
+    try {
+      await fs.access(metricsFile);
+    } catch {
+      await fs.writeFile(metricsFile, JSON.stringify({}), 'utf8');
+    }
+  } catch (err) {
+    console.error('Storage initialization error:', err);
+  }
+}
+initializeStorage();
+
+// Helper: Load metrics
+async function loadMetrics() {
+  try {
+    const data = await fs.readFile(metricsFile, 'utf8');
+    return JSON.parse(data);
+  } catch {
+    return {};
+  }
+}
+
+// Helper: Save metrics
+async function saveMetrics(metrics) {
+  try {
+    await fs.writeFile(metricsFile, JSON.stringify(metrics, null, 2), 'utf8');
+  } catch (err) {
+    console.error('Error saving metrics:', err);
+  }
+}
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
@@ -272,6 +315,118 @@ Return exactly ${GOLDEN_RULES_LIST.length} objects, one per rule ID listed above
   } catch (err) {
     console.error('validate-screenplay error:', err);
     res.status(500).json({ error: err.message || 'internal error' });
+  }
+});
+
+/**
+ * POST /api/save-content
+ * Body: { phase1Data, phase2Data, phase3Data, phase4Data, phase5Data }
+ * Returns: { contentId, shareUrl }
+ */
+app.post('/api/save-content', async (req, res) => {
+  try {
+    const { phase1Data, phase2Data, phase3Data, phase4Data, phase5Data } = req.body;
+
+    if (!phase1Data) {
+      return res.status(400).json({ error: 'At least phase1Data is required' });
+    }
+
+    const contentId = uuidv4();
+    const contentFile = path.join(contentDir, `${contentId}.json`);
+
+    const content = {
+      id: contentId,
+      phase1Data: phase1Data || null,
+      phase2Data: phase2Data || null,
+      phase3Data: phase3Data || null,
+      phase4Data: phase4Data || null,
+      phase5Data: phase5Data || null,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    // Save content file
+    await fs.writeFile(contentFile, JSON.stringify(content, null, 2), 'utf8');
+
+    // Update metrics
+    const metrics = await loadMetrics();
+    metrics[contentId] = {
+      sharedAt: new Date().toISOString(),
+      viewCount: 0
+    };
+    await saveMetrics(metrics);
+
+    const shareUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/#/share/${contentId}`;
+
+    res.json({
+      success: true,
+      contentId,
+      shareUrl,
+      message: 'Content saved and ready to share'
+    });
+  } catch (err) {
+    console.error('save-content error:', err);
+    res.status(500).json({ error: err.message || 'Failed to save content' });
+  }
+});
+
+/**
+ * GET /api/content/:contentId
+ * Returns all phases of saved content
+ */
+app.get('/api/content/:contentId', async (req, res) => {
+  try {
+    const { contentId } = req.params;
+    const contentFile = path.join(contentDir, `${contentId}.json`);
+
+    // Check if file exists
+    try {
+      await fs.access(contentFile);
+    } catch {
+      return res.status(404).json({ error: 'Content not found' });
+    }
+
+    const data = await fs.readFile(contentFile, 'utf8');
+    const content = JSON.parse(data);
+
+    // Increment view count
+    const metrics = await loadMetrics();
+    if (!metrics[contentId]) {
+      metrics[contentId] = { sharedAt: new Date().toISOString(), viewCount: 0 };
+    }
+    metrics[contentId].viewCount = (metrics[contentId].viewCount || 0) + 1;
+    await saveMetrics(metrics);
+
+    res.json(content);
+  } catch (err) {
+    console.error('get-content error:', err);
+    res.status(500).json({ error: err.message || 'Failed to retrieve content' });
+  }
+});
+
+/**
+ * GET /api/content/:contentId/view-count
+ * Returns share metrics
+ */
+app.get('/api/content/:contentId/view-count', async (req, res) => {
+  try {
+    const { contentId } = req.params;
+
+    const metrics = await loadMetrics();
+    const metric = metrics[contentId];
+
+    if (!metric) {
+      return res.status(404).json({ error: 'Share not found' });
+    }
+
+    res.json({
+      contentId,
+      viewCount: metric.viewCount,
+      sharedAt: metric.sharedAt
+    });
+  } catch (err) {
+    console.error('view-count error:', err);
+    res.status(500).json({ error: err.message || 'Failed to retrieve view count' });
   }
 });
 

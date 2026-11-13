@@ -273,8 +273,9 @@ export default async function handler(req, res) {
 
     const mergedResults = chunkResults.flat();
 
-    // Transliterate to Thanglish if needed
-    const finalResults = isThanglish ? transliterateResponse(mergedResults) : mergedResults;
+    // ALWAYS transliterate to Thanglish when language is Tamil
+    // This catches cases where AI generates Tamil Unicode despite Thanglish instructions
+    const finalResults = detectedLanguage === 'TA' ? transliterateResponse(mergedResults) : mergedResults;
 
     return res.status(200).json({
       success: true,
