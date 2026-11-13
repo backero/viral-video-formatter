@@ -1156,7 +1156,7 @@ export default function Phase4() {
 
         {validating && (
           <div className="mb-6 flex items-center gap-2 rounded-xl border border-border-subtle bg-[#151821] p-4 text-sm text-text-secondary">
-            Validating your actual screenplay across all checks — this takes 10-15 seconds...
+            Validating your actual screenplay across all 58 checks — this can take 30-45 seconds...
           </div>
         )}
         {validationError && (
