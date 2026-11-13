@@ -145,12 +145,13 @@ export default async function handler(req, res) {
 
 CRITICAL INSTRUCTION: This content is written in ${languageName}. You MUST respond in ${outputFormat} ONLY. Do not translate. Preserve the original language throughout the screenplay, all dialogue, descriptions, and every field.${isThanglish ? `
 
-**IMPORTANT - THANGLISH MODE ACTIVATED:**
-- Output MUST be in Tamil Thanglish (romanized Tamil using ONLY Roman alphabet a-z)
-- Use ONLY: a, e, i, o, u, k, t, n, p, m, r, l, s, h, v, y, j, c, zh, ng, sh, ch, th, etc
-- ABSOLUTELY NO Tamil Unicode characters (ஆ, ை, ு, ன், etc)
-- Examples of correct format: "nala", "kai", "un", "tha", "ku", "panuven", "sollran"
-- ALL dialogue, actions, visuals, audio descriptions MUST be romanized Tamil only
+**CRITICAL - THANGLISH ONLY - NO TAMIL SCRIPT ALLOWED:**
+RESPOND ONLY IN THANGLISH (Tamil in Roman letters).
+- Character mapping: a=அ/ஆ, e=எ/ஏ, i=இ/ஈ, o=ஒ/ஓ, u=உ/ஊ
+- k=க, ng=ங, ch=ச, ny=ஞ, t=ட, n=ண/ந/ன, th=த, p=ப, m=ம, y=ய, r=ர, l=ல, v=வ, zh=ழ, s=ஸ, h=ஹ, j=ஜ, sh=ஷ
+- EXAMPLES: "kai"="கை", "nala"="நல", "tha"="தா", "panuven"="பணுவேன்", "naan"="நான்"
+- WRITE USING ONLY: a-z, 0-9, spaces, punctuation. NEVER use Tamil Unicode letters.
+- ALL dialogue, action, visual, audio MUST be 100% Roman letters ONLY
 ` : ''}`
 
 Context:
