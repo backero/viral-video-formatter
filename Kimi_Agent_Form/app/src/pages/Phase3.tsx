@@ -165,6 +165,11 @@ export default function Phase3() {
         audioHook: data.phase2Hooks?.audio?.content || chosenNugget?.whyItWorks,
         lengthSec: Number(data.estimatedLength?.match(/\d+/)?.[0]) || 30,
         language: data.language,
+        // Short Topic fields alone don't always carry enough signal for
+        // Thanglish keyword detection — pass the original research dump too
+        // so language detection stays accurate even when topic/whyTheyCare/
+        // proof are brief.
+        research: data.research,
       }),
     })
       .then(async (res) => {

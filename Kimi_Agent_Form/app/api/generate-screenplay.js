@@ -58,6 +58,7 @@ export default async function handler(req, res) {
     audioHook,
     lengthSec = 30,
     language,
+    research,
   } = req.body;
 
   if (!topic) {
@@ -71,8 +72,11 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: 'API key not configured' });
     }
 
-    // Detect language from topic and context
-    const allText = `${topic} ${whyTheyCare || ''} ${proof || ''}`;
+    // Detect language from topic and context. The topic/whyTheyCare/proof
+    // fields are short (max ~20 words each) and can miss the Thanglish
+    // keyword threshold on their own, so fold in the original research dump
+    // (if provided) for a more reliable signal — it's usually much longer.
+    const allText = `${research || ''} ${topic} ${whyTheyCare || ''} ${proof || ''}`;
     const detectedLanguage = detectLanguage(allText);
     const languageName = {
       'TA': 'Tamil',
