@@ -140,9 +140,28 @@ Return ONLY valid JSON, no other text. ALL TEXT MUST BE IN ${languageName.toUppe
       throw new Error('API did not return valid nugget array');
     }
 
-    // ALWAYS transliterate to Thanglish when language is Tamil
-    // This catches cases where AI generates Tamil Unicode despite Thanglish instructions
-    const finalNuggets = detectedLanguage === 'TA' ? transliterateResponse(nuggets.slice(0, 3)) : nuggets.slice(0, 3);
+    // Strip all non-ASCII characters to force pure Thanglish (a-z, 0-9, spaces, punctuation only)
+    function stripNonASCII(obj) {
+      if (typeof obj === 'string') {
+        // Keep only ASCII: a-z, A-Z, 0-9, spaces, and basic punctuation (!?.,-'")
+        return obj.replace(/[^\x20-\x7E]/g, '').trim();
+      }
+      if (Array.isArray(obj)) {
+        return obj.map(stripNonASCII);
+      }
+      if (typeof obj === 'object' && obj !== null) {
+        const result = {};
+        for (const [key, value] of Object.entries(obj)) {
+          result[key] = stripNonASCII(value);
+        }
+        return result;
+      }
+      return obj;
+    }
+
+    // First transliterate (convert Tamil Unicode to Thanglish), then strip any remaining non-ASCII
+    let finalNuggets = detectedLanguage === 'TA' ? transliterateResponse(nuggets.slice(0, 3)) : nuggets.slice(0, 3);
+    finalNuggets = stripNonASCII(finalNuggets);
 
     return res.status(200).json({
       success: true,

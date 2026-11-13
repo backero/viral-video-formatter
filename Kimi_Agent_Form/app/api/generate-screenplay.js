@@ -178,9 +178,28 @@ ALL TEXT MUST BE IN ${languageName.toUpperCase()}. No English translations or mi
       throw new Error('API did not return 5 scenes');
     }
 
-    // ALWAYS transliterate to Thanglish when language is Tamil
-    // This catches cases where AI generates Tamil Unicode despite Thanglish instructions
-    const finalScenes = detectedLanguage === 'TA' ? transliterateResponse(scenes.slice(0, 5)) : scenes.slice(0, 5);
+    // Strip all non-ASCII characters to force pure Thanglish (a-z, 0-9, spaces, punctuation only)
+    function stripNonASCII(obj) {
+      if (typeof obj === 'string') {
+        // Keep only ASCII: a-z, A-Z, 0-9, spaces, and basic punctuation (!?.,-'")
+        return obj.replace(/[^\x20-\x7E]/g, '').trim();
+      }
+      if (Array.isArray(obj)) {
+        return obj.map(stripNonASCII);
+      }
+      if (typeof obj === 'object' && obj !== null) {
+        const result = {};
+        for (const [key, value] of Object.entries(obj)) {
+          result[key] = stripNonASCII(value);
+        }
+        return result;
+      }
+      return obj;
+    }
+
+    // First transliterate (convert Tamil Unicode to Thanglish), then strip any remaining non-ASCII
+    let finalScenes = detectedLanguage === 'TA' ? transliterateResponse(scenes.slice(0, 5)) : scenes.slice(0, 5);
+    finalScenes = stripNonASCII(finalScenes);
 
     return res.status(200).json({
       success: true,
