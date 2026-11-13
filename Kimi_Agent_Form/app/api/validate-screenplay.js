@@ -10,9 +10,14 @@ function detectLanguage(text) {
   const hindiRegex = /[ऀ-ॿ]/g;
   const hindiCount = (text.match(hindiRegex) || []).length;
 
-  // If significant Tamil/Hindi characters detected (lowered threshold to 5%)
+  // Thai Unicode range: U+0E00 to U+0E7F
+  const thaiRegex = /[ก-๙]/g;
+  const thaiCount = (text.match(thaiRegex) || []).length;
+
+  // If significant Tamil/Hindi/Thai characters detected (lowered threshold to 5%)
   if (tamilCount > text.length * 0.05) return 'TA'; // Tamil
   if (hindiCount > text.length * 0.05) return 'HI'; // Hindi
+  if (thaiCount > text.length * 0.05) return 'TH'; // Thai
 
   // Default to English
   return 'EN';
@@ -137,7 +142,7 @@ export default async function handler(req, res) {
 
     // Detect language from screenplay content
     const detectedLanguage = detectLanguage(screenplayText);
-    const languageName = { TA: 'Tamil', HI: 'Hindi', EN: 'English' }[detectedLanguage] || 'English';
+    const languageName = { TA: 'Tamil', HI: 'Hindi', TH: 'Thai', EN: 'English' }[detectedLanguage] || 'English';
 
     const checksText = CHECKS.map((c) => `${c.id} - ${c.name}: ${c.desc}`).join('\n');
 
