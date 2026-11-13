@@ -170,7 +170,10 @@ Return exactly ${chunk.length} objects, one per check ID listed above, in the sa
       'X-Title': 'Viral Form Video Creator',
     },
     body: JSON.stringify({
-      model: 'openai/gpt-6.1-terra-pro',
+      // Non-reasoning variant: validation is a classification task (PASS/FAIL/N/A
+      // per check), not creative generation, and *-pro's extended reasoning mode
+      // adds ~50s of fixed latency per call regardless of prompt/output size.
+      model: 'openai/gpt-6.1-terra',
       messages: [{ role: 'user', content: prompt }],
       temperature: 0.4,
       max_tokens: 4000,
