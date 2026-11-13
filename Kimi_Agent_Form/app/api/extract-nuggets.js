@@ -123,9 +123,17 @@ export default async function handler(req, res) {
       'EN': 'English'
     }[detectedLanguage] || 'English';
 
+    // Check if input is Thanglish (romanized Tamil)
+    const tamilUnicodeRegex = /[஀-௿]/g;
+    const isThanglish = detectedLanguage === 'TA' && !tamilUnicodeRegex.test(research);
+
+    const outputFormat = isThanglish
+      ? `${languageName} (in romanized/Thanglish format like: kai, naan, tha, um, ku, etc - NOT Tamil script)`
+      : languageName;
+
     const prompt = `You are an expert viral video creator. Analyze this research and extract 3 compelling "nuggets" (viral hooks) that would make people stop scrolling.
 
-CRITICAL INSTRUCTION: This content is written in ${languageName}. You MUST respond in ${languageName} ONLY. Do not translate to any other language. Preserve the original language throughout your response.
+CRITICAL INSTRUCTION: This content is written in ${languageName}. You MUST respond in ${outputFormat} ONLY. Do not translate to any other language. Preserve the original language throughout your response.${isThanglish ? ' If the input is romanized Tamil (Thanglish), RESPOND IN THANGLISH ROMANIZATION - use characters like a, e, i, o, u, k, t, n, p, m, etc. NOT Tamil Unicode script.' : ''}
 
 Research Content:
 ${research}
@@ -178,16 +186,9 @@ Return ONLY valid JSON, no other text. ALL TEXT MUST BE IN ${languageName.toUppe
       throw new Error('API did not return valid nugget array');
     }
 
-    // Check if input is Thanglish (not native Tamil Unicode)
-    const tamilUnicodeRegex = /[஀-௿]/g;
-    const isThanglish = detectedLanguage === 'TA' && !tamilUnicodeRegex.test(research);
-
-    // Transliterate response if input was Thanglish
-    const finalNuggets = isThanglish ? transliterateResponse(nuggets.slice(0, 3), true) : nuggets.slice(0, 3);
-
     return res.status(200).json({
       success: true,
-      options: finalNuggets,
+      options: nuggets.slice(0, 3),
       message: 'AI-extracted nuggets generated successfully',
     });
   } catch (error) {

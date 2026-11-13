@@ -216,6 +216,14 @@ export default async function handler(req, res) {
     const detectedLanguage = detectLanguage(screenplayText);
     const languageName = { TA: 'Tamil', HI: 'Hindi', TH: 'Thai', EN: 'English' }[detectedLanguage] || 'English';
 
+    // Check if input is Thanglish (romanized Tamil)
+    const tamilUnicodeRegex = /[஀-௿]/g;
+    const isThanglish = detectedLanguage === 'TA' && !tamilUnicodeRegex.test(screenplayText);
+
+    const outputFormat = isThanglish
+      ? `${languageName} (in romanized/Thanglish format like: kai, naan, tha, um, ku, etc - NOT Tamil script)`
+      : languageName;
+
     const checksText = CHECKS.map((c) => `${c.id} - ${c.name}: ${c.desc}`).join('\n');
 
     const prompt = `You are a strict short-form video script quality validator. Evaluate this actual screenplay against each of the ${CHECKS.length} checks below. Be honest — most real first-draft screenplays fail at least a few checks.
@@ -231,7 +239,7 @@ CRITICAL INSTRUCTIONS:
 - NEVER invent or reference an unrelated example topic (e.g. skincare, serums, or any product/subject not in the screenplay above). If illustrating a rewrite, rewrite using the ACTUAL dialogue words from the screenplay.
 - If a check genuinely does not apply given the information available (e.g. no reference video was mentioned, no multi-language mixing present), mark it "N/A" rather than forcing a PASS/FAIL.
 - "scenesAffected" must be an array of the scene numbers (integers) relevant to a FAIL result; use [] for PASS/N/A or checks that are global rather than scene-specific.
-- This screenplay is written in ${languageName}. Respond entirely in ${languageName} — all evidence and suggestedFix text must be in ${languageName}, field keys stay in English.
+- This screenplay is written in ${languageName}. Respond entirely in ${outputFormat} — all evidence and suggestedFix text must be in ${outputFormat}, field keys stay in English.${isThanglish ? ' If the input is romanized Tamil (Thanglish), RESPOND IN THANGLISH ROMANIZATION - use characters like a, e, i, o, u, k, t, n, p, m, etc. NOT Tamil Unicode script.' : ''}
 
 Return ONLY valid JSON (no markdown fences, no preamble), an array with exactly one object per check listed above, in the same order, this exact shape:
 {
@@ -277,20 +285,13 @@ Return exactly ${CHECKS.length} objects, one per check ID listed above, in the s
       throw new Error('Invalid validation response structure');
     }
 
-    // Check if input is Thanglish (not native Tamil Unicode)
-    const tamilUnicodeRegex = /[஀-௿]/g;
-    const isThanglish = detectedLanguage === 'TA' && !tamilUnicodeRegex.test(screenplayText);
-
-    // Transliterate response if input was Thanglish
-    const finalResults = isThanglish ? transliterateResponse(validationData.results, true) : validationData.results;
-
     return res.status(200).json({
       success: true,
-      results: finalResults,
+      results: validationData.results,
       message: 'Screenplay validated successfully',
       stats: {
         totalScenes: scenes.length,
-        checksPerformed: finalResults.length,
+        checksPerformed: validationData.results.length,
       },
     });
   } catch (error) {

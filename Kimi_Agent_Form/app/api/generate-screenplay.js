@@ -133,11 +133,19 @@ export default async function handler(req, res) {
       'EN': 'English'
     }[detectedLanguage] || 'English';
 
+    // Check if input is Thanglish (romanized Tamil)
+    const tamilUnicodeRegex = /[஀-௿]/g;
+    const isThanglish = detectedLanguage === 'TA' && !tamilUnicodeRegex.test(allText);
+
+    const outputFormat = isThanglish
+      ? `${languageName} (in romanized/Thanglish format like: kai, naan, tha, um, ku, etc - NOT Tamil script)`
+      : languageName;
+
     const durationPerScene = Math.ceil(lengthSec / 5);
 
     const prompt = `You are a viral video director. Create a 5-scene screenplay for a ${lengthSec}s video about: "${topic}"
 
-CRITICAL INSTRUCTION: This content is written in ${languageName}. You MUST respond in ${languageName} ONLY. Do not translate. Preserve the original language throughout the screenplay, all dialogue, descriptions, and every field.
+CRITICAL INSTRUCTION: This content is written in ${languageName}. You MUST respond in ${outputFormat} ONLY. Do not translate. Preserve the original language throughout the screenplay, all dialogue, descriptions, and every field.${isThanglish ? ' If the input is romanized Tamil (Thanglish), RESPOND IN THANGLISH ROMANIZATION - use characters like a, e, i, o, u, k, t, n, p, m, etc. NOT Tamil Unicode script.' : ''}
 
 Context:
 - Why people care: ${whyTheyCare || 'Unknown'}
@@ -201,16 +209,9 @@ ALL TEXT MUST BE IN ${languageName.toUpperCase()}. No English translations or mi
       throw new Error('API did not return 5 scenes');
     }
 
-    // Check if input is Thanglish (not native Tamil Unicode)
-    const tamilUnicodeRegex = /[஀-௿]/g;
-    const isThanglish = detectedLanguage === 'TA' && !tamilUnicodeRegex.test(allText);
-
-    // Transliterate response if input was Thanglish
-    const finalScenes = isThanglish ? transliterateResponse(scenes.slice(0, 5), true) : scenes.slice(0, 5);
-
     return res.status(200).json({
       success: true,
-      scenes: finalScenes,
+      scenes: scenes.slice(0, 5),
       message: 'Screenplay generated successfully',
       metadata: {
         topic,
