@@ -40,6 +40,61 @@ function detectLanguage(text) {
   return 'EN';
 }
 
+// Tamil to Thanglish transliteration function
+function tamilToThanglish(text) {
+  if (!text) return text;
+
+  const tamilMap = {
+    // Vowels
+    'ஆ': 'Aa', 'ஈ': 'Ee', 'ஊ': 'Oo', 'ஏ': 'E', 'ஐ': 'Ai', 'ஓ': 'O', 'ஔ': 'Au',
+    'ா': 'a', 'ி': 'i', 'ு': 'u', 'ூ': 'oo', 'ெ': 'e', 'ே': 'e', 'ৈ': 'ai', 'ো': 'o', 'ৌ': 'au',
+    'அ': 'a', 'இ': 'i', 'உ': 'u', 'எ': 'e', 'ஒ': 'o',
+
+    // Consonants with virama (pure consonants)
+    'க்': 'k', 'ங்': 'ng', 'ச்': 'ch', 'ஞ்': 'ny', 'ட்': 't', 'ண்': 'n', 'த்': 'th', 'ந்': 'n',
+    'ப்': 'p', 'ம்': 'm', 'ய்': 'y', 'ர்': 'r', 'ல்': 'l', 'வ்': 'v', 'ழ்': 'zh', 'ள்': 'l',
+    'ற்': 'r', 'ன்': 'n', 'ஜ்': 'j', 'ஷ்': 'sh', 'ஸ்': 's', 'ஹ்': 'h',
+
+    // Consonants with vowels
+    'க': 'ka', 'ங': 'nga', 'ச': 'cha', 'ஞ': 'nya', 'ட': 'ta', 'ண': 'na', 'த': 'tha', 'ந': 'na',
+    'ப': 'pa', 'ம': 'ma', 'ய': 'ya', 'ர': 'ra', 'ல': 'la', 'வ': 'va', 'ழ': 'zha', 'ள': 'la',
+    'ற': 'ra', 'ன': 'na', 'ஜ': 'ja', 'ஷ': 'sha', 'ஸ': 'sa', 'ஹ': 'ha',
+
+    // Special characters
+    '்': '', '0': '0', '1': '1', '2': '2', '3': '3', '4': '4', '5': '5', '6': '6', '7': '7', '8': '8', '9': '9',
+    '?': '?', '!': '!', '.': '.', ',': ',', ':': ':', ';': ';', '-': '-', ' ': ' ',
+  };
+
+  let result = '';
+  for (let i = 0; i < text.length; i++) {
+    const char = text[i];
+    result += tamilMap[char] || char;
+  }
+
+  return result;
+}
+
+// Helper to transliterate JSON response
+function transliterateResponse(obj, isThanglish) {
+  if (!isThanglish || typeof obj !== 'object') return obj;
+
+  if (Array.isArray(obj)) {
+    return obj.map(item => transliterateResponse(item, isThanglish));
+  }
+
+  const translated = {};
+  for (const [key, value] of Object.entries(obj)) {
+    if (typeof value === 'string') {
+      translated[key] = tamilToThanglish(value);
+    } else if (typeof value === 'object' && value !== null) {
+      translated[key] = transliterateResponse(value, isThanglish);
+    } else {
+      translated[key] = value;
+    }
+  }
+  return translated;
+}
+
 // The full 58-check catalog. Keep ids/names/categories in sync with
 // Kimi_Agent_Form/app/src/pages/Phase4.tsx's INITIAL_CHECKS — the frontend
 // merges results onto that list by id, so every id listed here must exist there.
@@ -222,13 +277,20 @@ Return exactly ${CHECKS.length} objects, one per check ID listed above, in the s
       throw new Error('Invalid validation response structure');
     }
 
+    // Check if input is Thanglish (not native Tamil Unicode)
+    const tamilUnicodeRegex = /[஀-௿]/g;
+    const isThanglish = detectedLanguage === 'TA' && !tamilUnicodeRegex.test(screenplayText);
+
+    // Transliterate response if input was Thanglish
+    const finalResults = isThanglish ? transliterateResponse(validationData.results, true) : validationData.results;
+
     return res.status(200).json({
       success: true,
-      results: validationData.results,
+      results: finalResults,
       message: 'Screenplay validated successfully',
       stats: {
         totalScenes: scenes.length,
-        checksPerformed: validationData.results.length,
+        checksPerformed: finalResults.length,
       },
     });
   } catch (error) {
