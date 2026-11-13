@@ -123,7 +123,8 @@ function chunkArray(arr, size) {
 
 // Run checks in parallel batches instead of one 58-check completion — cuts
 // wall-clock time to roughly the slowest batch instead of the sum of all 58.
-const CHECK_CHUNKS = chunkArray(CHECKS, 15);
+// Smaller batches = less output per completion = lower truncation risk.
+const CHECK_CHUNKS = chunkArray(CHECKS, 10);
 
 async function validateChunk({ apiKey, screenplayText, chunk, languageName, outputFormat, isThanglish }) {
   const checksText = chunk.map((c) => `${c.id} - ${c.name}: ${c.desc}`).join('\n');
@@ -172,7 +173,7 @@ Return exactly ${chunk.length} objects, one per check ID listed above, in the sa
       model: 'openai/gpt-6.1-terra-pro',
       messages: [{ role: 'user', content: prompt }],
       temperature: 0.4,
-      max_tokens: 2500,
+      max_tokens: 4000,
     }),
   });
 
@@ -189,7 +190,14 @@ Return exactly ${chunk.length} objects, one per check ID listed above, in the sa
   }
 
   const cleaned = content.replace(/```json|```/g, '').trim();
-  const parsed = JSON.parse(cleaned);
+  let parsed;
+  try {
+    parsed = JSON.parse(cleaned);
+  } catch (parseErr) {
+    throw new Error(
+      `Validator returned malformed JSON for checks [${chunk.map((c) => c.id).join(', ')}] (likely truncated): ${parseErr.message}`
+    );
+  }
 
   if (!parsed.results || !Array.isArray(parsed.results)) {
     throw new Error('Invalid validation response structure');
