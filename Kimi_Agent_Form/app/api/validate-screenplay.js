@@ -139,18 +139,17 @@ ${checksText}
 
 CRITICAL INSTRUCTIONS:
 - "evidence" and "suggestedFix" must ONLY reference scenes, dialogue, numbers, and details that literally appear in the SCREENPLAY above.
-- NEVER invent or reference an unrelated example topic (e.g. skincare, serums, or any product/subject not in the screenplay above). If illustrating a rewrite, rewrite using the ACTUAL dialogue words from the screenplay.
-- If a check genuinely does not apply given the information available (e.g. no reference video was mentioned, no multi-language mixing present), mark it "N/A" rather than forcing a PASS/FAIL.
-- "scenesAffected" must be an array of the scene numbers (integers) relevant to a FAIL result; use [] for PASS/N/A or checks that are global rather than scene-specific.
-- This screenplay is written in ${languageName}. Respond entirely in ${outputFormat} — all evidence and suggestedFix text must be in ${outputFormat}, field keys stay in English.${isThanglish ? `
+- NEVER invent or reference an unrelated example topic. If illustrating a rewrite, rewrite using the ACTUAL dialogue words from the screenplay.
+- If a check genuinely does not apply, mark it "N/A" rather than forcing a PASS/FAIL.
+- "scenesAffected" must be an array of the scene numbers (integers) relevant to a FAIL result; use [] for PASS/N/A or checks that are global.
 
-**CRITICAL - THANGLISH ONLY - NO TAMIL SCRIPT ALLOWED:**
-RESPOND ONLY IN THANGLISH (Tamil in Roman letters).
-- Character mapping: a=அ/ஆ, e=எ/ஏ, i=இ/ஈ, o=ஒ/ஓ, u=உ/ஊ
-- k=க, ng=ங, ch=ச, ny=ஞ, t=ட, n=ண/ந/ன, th=த, p=ப, m=ம, y=ய, r=ர, l=ல, v=வ, zh=ழ, s=ஸ, h=ஹ, j=ஜ, sh=ஷ
-- EXAMPLES: "kai"="கை", "nala"="நல", "tha"="தா", "panuven"="பணுவேன்", "naan"="நான்"
-- WRITE USING ONLY: a-z, 0-9, spaces, punctuation. NEVER use Tamil Unicode letters.
-- ALL evidence and suggestedFix MUST be 100% Roman letters ONLY` : ''}
+**ABSOLUTE REQUIREMENT:**
+- You MUST respond in pure romanized Tamil (Thanglish) ONLY
+- Use ONLY ASCII Roman letters (a-z, A-Z), numbers (0-9), spaces, and basic punctuation
+- NEVER EVER use any Tamil Unicode characters or any non-ASCII characters
+- Every single word in evidence and suggestedFix must use only a-z letters
+- If you cannot write something in pure ASCII Roman letters, SKIP IT
+- All evidence and suggestedFix text must be 100% ASCII-only, field keys stay in English
 
 Return ONLY valid JSON (no markdown fences, no preamble), an array with exactly one object per check listed above, in the same order, this exact shape:
 {

@@ -79,16 +79,15 @@ export default async function handler(req, res) {
 
     const prompt = `You are an expert viral video creator. Analyze this research and extract 3 compelling "nuggets" (viral hooks) that would make people stop scrolling.
 
-CRITICAL INSTRUCTION: This content is written in ${languageName}. You MUST respond in ${outputFormat} ONLY.${isThanglish ? `
+**ABSOLUTE REQUIREMENT - READ CAREFULLY:**
+- You MUST respond in pure romanized Tamil (Thanglish) ONLY
+- Use ONLY ASCII Roman letters (a-z, A-Z), numbers (0-9), spaces, and basic punctuation
+- NEVER EVER use any Tamil Unicode characters or any non-ASCII characters
+- Every single word must be spelled using only a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y, z
+- If you cannot write something in pure ASCII Roman letters, SKIP IT
+- All field values (title, point, whyItWorks, whyTheyCare, proof) must be 100% ASCII-only
 
-**CRITICAL - THANGLISH ONLY - NO TAMIL SCRIPT ALLOWED:**
-RESPOND ONLY IN THANGLISH (Tamil in Roman letters).
-- Character mapping: a=அ/ஆ, e=எ/ஏ, i=இ/ஈ, o=ஒ/ஓ, u=உ/ஊ
-- k=க, ng=ங, ch=ச, ny=ஞ, t=ட, n=ண/ந/ன, th=த, p=ப, m=ம, y=ய, r=ர, l=ல, v=வ, zh=ழ, s=ஸ, h=ஹ, j=ஜ, sh=ஷ
-- EXAMPLES OF CORRECT THANGLISH: "kai"="கை", "nala"="நல", "tha"="தா", "panuven"="பணுவேன்", "naan"="நான்"
-- WRITE USING ONLY: a-z, 0-9, spaces, punctuation. NEVER use Tamil Unicode letters.
-- ALL output: title, point, whyItWorks, whyTheyCare, proof MUST be 100% Roman letters ONLY
-` : ''}
+This research is in Tamil (Thanglish). Respond in the EXACT SAME STYLE - pure romanized Tamil using only a-z letters.`
 
 Research Content:
 ${research}
