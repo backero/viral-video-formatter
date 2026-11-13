@@ -189,7 +189,6 @@ export default function Phase1() {
   const [estimatedLength, setEstimatedLength] = useState(() => data.estimatedLength || '');
   const [aspectRatio, setAspectRatio] = useState(() => data.aspectRatio || '9:16');
   const [actorCount, setActorCount] = useState(() => data.actorCount || '1');
-  const [language, setLanguage] = useState(() => data.language || 'EN');
 
   const [research, setResearch] = useState(() => data.research || '');
   const [extracting, setExtracting] = useState(false);
@@ -237,7 +236,7 @@ export default function Phase1() {
     const timeout = setTimeout(() => {
       updateData({
         date, creator, actor, company, platform, estimatedLength, aspectRatio,
-        actorCount, language, research,
+        actorCount, research,
         selectedNuggetIndex: selectedNugget,
         niche, subNiche, thePoint, whyTheyCare, theProof, actionableTakeaway,
         whyNugget, timeToValue, contentStyle, selfChecks, validationChecks,
@@ -247,7 +246,7 @@ export default function Phase1() {
     return () => clearTimeout(timeout);
   }, [
     date, creator, actor, company, platform, estimatedLength, aspectRatio,
-    actorCount, language, research, selectedNugget,
+    actorCount, research, selectedNugget,
     niche, subNiche, thePoint, whyTheyCare, theProof, actionableTakeaway,
     whyNugget, timeToValue, contentStyle, selfChecks, validationChecks,
     refUrl, copyElement, copyDescription,
@@ -275,14 +274,14 @@ export default function Phase1() {
 
   const isFormValid = useMemo(() => {
     return (
-      date && creator && actor && company && platform && estimatedLength && aspectRatio && actorCount && language &&
+      date && creator && actor && company && platform && estimatedLength && aspectRatio && actorCount &&
       research.length > 200 &&
       selectedNugget !== null &&
       whyNugget.length > 0 &&
       niche && subNiche && thePoint && whyTheyCare && theProof &&
       actionableTakeaway && timeToValue && contentStyle
     );
-  }, [date, creator, actor, company, platform, estimatedLength, aspectRatio, actorCount, language, research, selectedNugget, whyNugget, niche, subNiche, thePoint, whyTheyCare, theProof, actionableTakeaway, timeToValue, contentStyle]);
+  }, [date, creator, actor, company, platform, estimatedLength, aspectRatio, actorCount, research, selectedNugget, whyNugget, niche, subNiche, thePoint, whyTheyCare, theProof, actionableTakeaway, timeToValue, contentStyle]);
 
   const missingFields = useMemo(() => {
     const missing: string[] = [];
@@ -316,7 +315,7 @@ export default function Phase1() {
       const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ research, language }),
+        body: JSON.stringify({ research }),
       });
       if (!res.ok) {
         const errBody = await res.json().catch(() => ({}));
@@ -587,22 +586,6 @@ export default function Phase1() {
                   onChange={(e) => setActorCount(e.target.value)}
                   className="bg-bg-tertiary border-border-subtle text-text-primary placeholder:text-text-tertiary focus-visible:ring-accent-input/30"
                 />
-              </div>
-              {/* Language */}
-              <div>
-                <FormLabel>Language</FormLabel>
-                <Select value={language} onValueChange={setLanguage}>
-                  <SelectTrigger className="bg-bg-tertiary border-border-subtle text-text-primary focus:ring-accent-input/30">
-                    <SelectValue placeholder="Select language" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-bg-quaternary border-border-medium">
-                    {['EN', 'HI', 'TA', 'HIN-EN', 'TAM-EN'].map((l) => (
-                      <SelectItem key={l} value={l} className="text-text-primary focus:bg-bg-tertiary focus:text-text-primary">
-                        {l}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
               </div>
             </div>
           </Card>
