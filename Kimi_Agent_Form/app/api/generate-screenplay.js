@@ -19,6 +19,23 @@ function detectLanguage(text) {
   if (hindiCount > text.length * 0.05) return 'HI'; // Hindi
   if (thaiCount > text.length * 0.05) return 'TH'; // Thai
 
+  // Tamil Thanglish detection (romanized Tamil)
+  // Common Tamil Thanglish patterns: word endings and suffixes
+  const tamilThanglishPatterns = [
+    /\b(kai|naan|ivan|avan|athey|indha|intha|enna|yenna|sollran|sollrathu)\b/gi,  // Common Tamil words
+    /\w+(ku|nu|tha|um|ae|am|an|en|ir)\b/gi,  // Tamil suffixes
+    /\b(oru|rendu|munn|naalu|ayiru|aaru|ezhulvathu|enpathu)\b/gi,  // Tamil numbers/quantifiers
+  ];
+
+  let tamilThanglishScore = 0;
+  for (const pattern of tamilThanglishPatterns) {
+    const matches = text.match(pattern) || [];
+    tamilThanglishScore += matches.length;
+  }
+
+  // If at least 3 Tamil Thanglish patterns detected
+  if (tamilThanglishScore >= 3) return 'TA'; // Tamil Thanglish
+
   // Default to English
   return 'EN';
 }
