@@ -2,7 +2,7 @@ import { useState, useRef, useCallback, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  MousePointer, Trash2, Download, ChevronLeft,
+  MousePointer, Trash2, Download, ChevronLeft, ChevronRight,
   Layers, RotateCcw, FileJson, Zap, Box, Volume2, Film,
   Monitor, Type, Image, Video, Mic, Sparkles,
   Settings2, X, Plus, ArrowRight,
@@ -1250,6 +1250,17 @@ export default function Phase6() {
           </motion.div>
         </div>
       )}
+
+      {/* ═══════════════ Footer Navigation ═══════════════ */}
+      <div className="max-w-[1400px] mx-auto px-4 py-8 border-t border-border-subtle flex items-center justify-start">
+        <button
+          onClick={() => navigate('/phase/5')}
+          className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm text-text-secondary hover:text-text-primary hover:bg-bg-tertiary transition-colors"
+        >
+          <ChevronRight className="w-4 h-4 rotate-180" />
+          Back to Phase 5
+        </button>
+      </div>
     </div>
   );
 }

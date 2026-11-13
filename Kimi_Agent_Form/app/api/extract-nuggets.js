@@ -1,5 +1,25 @@
 import { tamilToThanglish, transliterateResponse } from './transliterate.js';
 
+// Strip all non-ASCII characters (ensure pure Thanglish)
+function stripToASCII(obj) {
+  if (!obj) return obj;
+  if (typeof obj === 'string') {
+    // Remove all non-ASCII characters, keep only a-z, A-Z, 0-9, spaces, and basic punctuation
+    return obj.replace(/[^\x20-\x7E]/g, ' ').replace(/\s+/g, ' ').trim();
+  }
+  if (Array.isArray(obj)) {
+    return obj.map(stripToASCII);
+  }
+  if (typeof obj === 'object') {
+    const result = {};
+    for (const [k, v] of Object.entries(obj)) {
+      result[k] = stripToASCII(v);
+    }
+    return result;
+  }
+  return obj;
+}
+
 // Language detection function
 function detectLanguage(text) {
   if (!text) return 'EN';
@@ -22,11 +42,16 @@ function detectLanguage(text) {
   if (thaiCount > text.length * 0.05) return 'TH'; // Thai
 
   // Tamil Thanglish detection (romanized Tamil)
-  // Common Tamil Thanglish patterns: word endings and suffixes
+  // Expanded keyword list covering verbs, nouns, pronouns, particles, adjectives
   const tamilThanglishPatterns = [
-    /\b(kai|nala|iruku|naan|ivan|avan|athey|indha|intha|enna|yenna|sollran|sollrathu|atha|la|le|nu|ma|panivu|pannuren|pannalam|irundhalen|ah|eh|eh|pannura|pannitu|parrindhuki|panninum|pottiya)\b/gi,
-    /\w+(ku|nu|tha|um|ae|am|an|en|ir)\b/gi,
-    /\b(oru|rendu|munn|naalu|ayiru|aaru|ezhulvathu|enpathu)\b/gi,
+    // Core Tamil Thanglish keywords (verbs, nouns, pronouns, particles)
+    /\b(kai|kail|nala|iruku|naan|nee|avan|aval|avangal|athey|indha|intha|enna|yenna|sollran|sollren|sollen|sollrathu|atha|la|le|nu|ma|panivu|pannuren|pannalam|irundhalen|ah|eh|pannura|pannitu|parrindhuki|panninum|pottiya|pannren|pannanum|pannittan|pannirukkum|irundhadhu|iranda|irukku|vaanganum|vendavangal|kodai|dhaan|dhi|seri|saiyya|pidicha|mudiyanum|ayya|amma|thambi|akka|appa)\b/gi,
+    // Tamil suffixes and word endings (-kkum, -ndu, -nu, -um, -ai, -an, -en, -ir, -ku, -tha, -ae, -am)
+    /\w+(kkum|ndu|nu|um|ai|an|en|ir|ku|tha|ae|am|ar|al|el|ol|odhan|otthu)\b/gi,
+    // Numbers and quantifiers
+    /\b(onnu|rannu|moonnu|nanu|ayidhu|aaru|ezhudhu|ettu|tombai|pathu|paththundu|oru|onru|rendu|munn|naalu|ayiru|aaru|ezhulvathu|enpathu)\b/gi,
+    // Additional common phrases and words
+    /\b(illai|aamam|irukkanum|irukkiradhu|pannalaam|panikkanum|solli|solluraan|vendai|mukkiyamana|odhan|otthu|sadam|thinnum|kaanaam|paarukkanum|yaarukum|eppadi|engadhu|adhukku|avar|avargal|athanu|yethirai)\b/gi,
   ];
 
   let tamilThanglishScore = 0;
@@ -46,20 +71,24 @@ function detectLanguage(text) {
 // Vercel Serverless Function for AI Nugget Extraction
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+    return res.status(405).json({ error: 'Invalid request method. Use POST.' });
   }
 
   const { research } = req.body;
 
   if (!research) {
-    return res.status(400).json({ error: 'Research content required' });
+    return res.status(400).json({ error: 'Research content is empty. Paste your research dump in Phase 1 to continue.' });
+  }
+
+  if (research.length < 200) {
+    return res.status(400).json({ error: `Research too short (${research.length}/200 characters). Add more details, stats, or quotes.` });
   }
 
   try {
     const apiKey = process.env.OPENROUTER_API_KEY;
     if (!apiKey) {
       console.error('OPENROUTER_API_KEY not set');
-      return res.status(500).json({ error: 'API key not configured' });
+      return res.status(500).json({ error: 'Backend configuration error: API key missing. Contact support.' });
     }
 
     // Detect language from research content
@@ -75,36 +104,34 @@ export default async function handler(req, res) {
     const tamilUnicodeRegex = /[஀-௿]/g;
     const isThanglish = detectedLanguage === 'TA' && !tamilUnicodeRegex.test(research);
 
-    const outputFormat = isThanglish ? 'Tamil Thanglish (romanized with Roman letters ONLY)' : languageName;
+    const prompt = `YOU MUST RESPOND IN PURE THANGLISH (ROMAN LETTERS ONLY) - NO EXCEPTIONS!
 
-    const prompt = `You are an expert viral video creator. Analyze this research and extract 3 compelling "nuggets" (viral hooks) that would make people stop scrolling.
+You are an expert viral video creator. Analyze this research and extract 3 compelling "nuggets" (viral hooks) that would make people stop scrolling.
 
-**ABSOLUTE REQUIREMENT - READ CAREFULLY:**
-- You MUST respond in pure romanized Tamil (Thanglish) ONLY
-- Use ONLY ASCII Roman letters (a-z, A-Z), numbers (0-9), spaces, and basic punctuation
-- NEVER EVER use any Tamil Unicode characters or any non-ASCII characters
-- Every single word must be spelled using only a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y, z
-- If you cannot write something in pure ASCII Roman letters, SKIP IT
-- All field values (title, point, whyItWorks, whyTheyCare, proof) must be 100% ASCII-only
+**CRITICAL RULES - FOLLOW EXACTLY:**
+1. RESPOND ONLY IN THANGLISH (romanized Tamil using ONLY Roman letters a-z)
+2. ZERO Tamil Unicode characters allowed
+3. ZERO non-ASCII characters allowed
+4. Every word must use ONLY: a b c d e f g h i j k l m n o p q r s t u v w x y z (and 0-9, spaces, . , ! ? - ')
+5. If you cannot write a word in Roman letters, DELETE IT and skip it
+6. ALL output must be 100% ASCII (copy-paste must work in English systems)
+7. Do NOT use any special symbols or Unicode
 
-This research is in Tamil (Thanglish). Respond in the EXACT SAME STYLE - pure romanized Tamil using only a-z letters.`
+LANGUAGE: ${detectedLanguage === 'TA' ? 'THANGLISH ONLY' : 'ENGLISH'}
+Research language: Tamil/Thanglish
+Response language: THANGLISH (Roman letters ONLY)
 
 Research Content:
 ${research}
 
-For each nugget, return valid JSON with exactly this structure (no markdown, just JSON):
+Return ONLY valid JSON (no markdown, no explanation):
 [
-  {
-    "title": "Hook Category (e.g., 'Shocking Fact', 'Problem-Solution', 'Innovation Angle')",
-    "whyItWorks": "Why this hook captures attention (1 sentence)",
-    "point": "The actual hook/message (under 15 words)",
-    "whyTheyCare": "Why viewers care about this (1 sentence)",
-    "proof": "Evidence or proof that supports this claim (1 sentence)"
-  },
-  ...repeat 2 more times
+  {"title":"Hook title (Roman letters ONLY)","whyItWorks":"Why this works (1 sentence, Roman only)","point":"Hook message under 15 words (Roman only)","whyTheyCare":"Why they care (1 sentence, Roman only)","proof":"Supporting proof (1 sentence, Roman only)"},
+  {"title":"Hook 2...","whyItWorks":"...","point":"...","whyTheyCare":"...","proof":"..."},
+  {"title":"Hook 3...","whyItWorks":"...","point":"...","whyTheyCare":"...","proof":"..."}
 ]
 
-Return ONLY valid JSON, no other text. ALL TEXT MUST BE IN ${languageName.toUpperCase()}.`;
+REQUIREMENT: EVERY CHARACTER MUST BE a-z, 0-9, OR SPACE/PUNCTUATION. NO EXCEPTIONS.`;
 
     const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
@@ -140,8 +167,46 @@ Return ONLY valid JSON, no other text. ALL TEXT MUST BE IN ${languageName.toUppe
       throw new Error('API did not return valid nugget array');
     }
 
-    // ALWAYS transliterate when Tamil is detected (Thanglish or Unicode)
-    const finalNuggets = detectedLanguage === 'TA' ? transliterateResponse(nuggets.slice(0, 3)) : nuggets.slice(0, 3);
+    let finalNuggets = nuggets.slice(0, 3);
+
+    // Step 1: Transliterate if Tamil Unicode detected
+    if (detectedLanguage === 'TA') {
+      finalNuggets = transliterateResponse(finalNuggets);
+    }
+
+    // Step 2: CRITICAL - Strip ALL non-ASCII characters to ensure pure Thanglish
+    finalNuggets = stripToASCII(finalNuggets);
+
+    // Step 3: Validation - ensure no non-ASCII characters remain
+    const validateASCII = (obj) => {
+      if (typeof obj === 'string') {
+        const nonASCII = obj.replace(/[\x20-\x7E]/g, ''); // Remove all valid ASCII
+        if (nonASCII.length > 0) {
+          console.warn(`Non-ASCII detected in: "${obj}". Cleaned version applied.`);
+        }
+      }
+    };
+
+    finalNuggets.forEach(nugget => {
+      Object.values(nugget).forEach(validateASCII);
+    });
+
+    // Step 4: Check hook diversity - ensure hooks are sufficiently different
+    const calculateSimilarity = (str1, str2) => {
+      const s1 = str1.toLowerCase().split(/\s+/);
+      const s2 = str2.toLowerCase().split(/\s+/);
+      const common = s1.filter(w => s2.includes(w)).length;
+      return common / Math.max(s1.length, s2.length);
+    };
+
+    for (let i = 0; i < finalNuggets.length; i++) {
+      for (let j = i + 1; j < finalNuggets.length; j++) {
+        const similarity = calculateSimilarity(finalNuggets[i].point, finalNuggets[j].point);
+        if (similarity > 0.6) {
+          console.warn(`Hooks ${i + 1} and ${j + 1} are ${(similarity * 100).toFixed(0)}% similar. Consider regenerating for more diversity.`);
+        }
+      }
+    }
 
     return res.status(200).json({
       success: true,
@@ -150,8 +215,18 @@ Return ONLY valid JSON, no other text. ALL TEXT MUST BE IN ${languageName.toUppe
     });
   } catch (error) {
     console.error('Extract nuggets error:', error);
-    return res.status(500).json({
-      error: error.message || 'Failed to extract nuggets',
-    });
+
+    let userMessage = 'Failed to extract nuggets';
+    if (error.message?.includes('API error') || error.message?.includes('timeout')) {
+      userMessage = 'AI service is slow right now. Try again in a few seconds.';
+    } else if (error.message?.includes('did not return valid')) {
+      userMessage = 'AI response was incomplete. Try with more specific research details.';
+    } else if (error.message?.includes('No content')) {
+      userMessage = 'AI service returned empty response. Try simplifying your research text.';
+    } else if (error.message?.includes('JSON')) {
+      userMessage = 'AI response format error. Try with different research content.';
+    }
+
+    return res.status(500).json({ error: userMessage });
   }
 }

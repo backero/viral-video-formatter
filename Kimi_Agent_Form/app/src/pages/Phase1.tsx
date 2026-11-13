@@ -18,6 +18,7 @@ import {
   Sparkles,
   Loader2,
   Paperclip,
+  ChevronRight,
 } from 'lucide-react';
 import { Layout } from '@/components/Layout';
 import { Card } from '@/components/Card';
@@ -229,6 +230,29 @@ export default function Phase1() {
   const [copyDescription, setCopyDescription] = useState(() => data.copyDescription || '');
 
   const [toast, setToast] = useState<string | null>(null);
+  const [diversityWarning, setDiversityWarning] = useState<boolean>(false);
+
+  // Check hook diversity when nuggets change
+  useMemo(() => {
+    if (apiNuggets && apiNuggets.length === 3) {
+      const calculateSimilarity = (str1: string, str2: string) => {
+        const s1 = str1.toLowerCase().split(/\s+/);
+        const s2 = str2.toLowerCase().split(/\s+/);
+        const common = s1.filter(w => s2.includes(w)).length;
+        return common / Math.max(s1.length, s2.length);
+      };
+
+      let hasSimilarity = false;
+      for (let i = 0; i < 3; i++) {
+        for (let j = i + 1; j < 3; j++) {
+          if (calculateSimilarity(apiNuggets[i].text, apiNuggets[j].text) > 0.6) {
+            hasSimilarity = true;
+          }
+        }
+      }
+      setDiversityWarning(hasSimilarity);
+    }
+  }, [apiNuggets]);
 
   /* --- autosave: push local field state into shared context (and localStorage) --- */
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -254,7 +278,9 @@ export default function Phase1() {
 
   /* --- computed --- */
   const researchCharCount = research.length;
-  const isResearchReady = researchCharCount > 200;
+  const researchWordCount = research.trim().split(/\s+/).filter(w => w.length > 0).length;
+  const researchSentenceCount = research.split(/[.!?]+/).filter(s => s.trim().length > 0).length;
+  const isResearchReady = researchCharCount > 200 && researchWordCount >= 50 && researchSentenceCount >= 3;
 
   const wordCount = (s: string) => s.trim().split(/\s+/).filter(Boolean).length;
 
@@ -291,6 +317,8 @@ export default function Phase1() {
     if (!platform) missing.push('Platform');
     if (!estimatedLength) missing.push('Estimated Length');
     if (!(research.length > 200)) missing.push('Raw Research Dump (200+ characters)');
+    else if (researchWordCount < 50) missing.push('Raw Research Dump (50+ words)');
+    else if (researchSentenceCount < 3) missing.push('Raw Research Dump (3+ sentences)');
     if (selectedNugget === null) missing.push('One Point Selector (pick a nugget)');
     if (!(whyNugget.length > 0)) missing.push('Why This Nugget');
     if (!niche) missing.push('Niche');
@@ -623,9 +651,23 @@ export default function Phase1() {
                     <span className="text-xs text-accent-input">Ready for nugget extraction</span>
                   </motion.div>
                 )}
+                {!isResearchReady && research.length > 0 && (
+                  <motion.div
+                    className="flex items-center gap-1.5"
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <span className="text-xs text-text-tertiary">
+                      {researchCharCount < 200 && `Need ${200 - researchCharCount} more characters`}
+                      {researchCharCount >= 200 && researchWordCount < 50 && `Need ${50 - researchWordCount} more words`}
+                      {researchCharCount >= 200 && researchWordCount >= 50 && researchSentenceCount < 3 && `Need ${3 - researchSentenceCount} more sentence${3 - researchSentenceCount > 1 ? 's' : ''}`}
+                    </span>
+                  </motion.div>
+                )}
               </div>
               <span className="text-xs text-text-tertiary">
-                {researchCharCount.toLocaleString()} characters
+                {researchCharCount.toLocaleString()} chars · {researchWordCount} words · {researchSentenceCount} sentences
               </span>
             </div>
 
@@ -735,6 +777,23 @@ export default function Phase1() {
                 <p className="text-sm font-medium text-text-secondary mb-3">
                   AI extracted 3 potential hooks from your research:
                 </p>
+                {diversityWarning && apiNuggets && (
+                  <div className="mb-4 p-3 rounded-lg border border-warning/40 bg-warning/10 flex items-start gap-2">
+                    <AlertTriangle size={16} className="text-warning flex-shrink-0 mt-0.5" />
+                    <div className="text-xs text-warning">
+                      <p className="font-medium mb-1">Hooks are very similar — consider regenerating for more diversity</p>
+                      <button
+                        onClick={() => {
+                          setNuggetsVisible(false);
+                          handleExtractNuggets();
+                        }}
+                        className="text-warning underline hover:no-underline text-xs"
+                      >
+                        Regenerate hooks
+                      </button>
+                    </div>
+                  </div>
+                )}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-5">
                   {displayNuggets.map((n, i) => (
                     <motion.div
@@ -1327,6 +1386,17 @@ export default function Phase1() {
             </Button>
           </div>
         </motion.div>
+
+        {/* ═══════════════ Footer Navigation ═══════════════ */}
+        <div className="flex items-center justify-end pt-8 border-t border-border-subtle">
+          <button
+            onClick={() => navigate('/phase/2')}
+            className="flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-medium text-text-inverse transition-opacity hover:opacity-90"
+            style={{ backgroundColor: ACCENT }}
+          >
+            Next Phase <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
       </motion.div>
 
       {/* ============================================================ */}

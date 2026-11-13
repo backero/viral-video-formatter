@@ -6,7 +6,7 @@ import {
   Copy, Check, ChevronLeft,
   FileDown, Film, Clapperboard, Printer,
   Package, Shield,
-  Zap, Sparkles, CheckCircle2, Share2
+  Zap, Sparkles, CheckCircle2, Share2, RefreshCw
 } from 'lucide-react';
 import { Layout } from '@/components/Layout';
 import { Card } from '@/components/Card';
@@ -464,8 +464,57 @@ export default function Phase5({ isShared = false }: Phase5Props) {
     URL.revokeObjectURL(url);
   }, [jsonEnvelope]);
 
+  /* ---- Download CSV ---- */
+  const handleDownloadCSV = useCallback(() => {
+    const rows = [
+      ['Scene', 'Timing', 'Dialogue', 'Action', 'Camera', 'Actor Expression', 'Energy'],
+      ...activeScenes.map(s => [
+        `${s.sceneNum}: ${s.name}`,
+        `${s.timingStart}-${s.timingEnd}s`,
+        s.dialogue,
+        s.action,
+        `${s.cameraShot}, ${s.cameraAngle}`,
+        s.actorExpression,
+        s.actorEnergy,
+      ]),
+    ];
+    const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'screenplay.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [activeScenes]);
+
+  /* ---- Download Markdown ---- */
+  const handleDownloadMarkdown = useCallback(() => {
+    const md = `# ${activeMeta.title}\n\n**By:** ${activeMeta.actor} | **Company:** ${activeMeta.company} | **Runtime:** ${activeMeta.runtime}\n\n${activeScenes.map(s => `## Scene ${s.sceneNum}: ${s.name} (${s.timingStart}-${s.timingEnd}s)\n\n**Dialogue:**\n${s.dialogue}\n\n**Action:**\n${s.action}\n\n**Camera:** ${s.cameraShot}, ${s.cameraAngle}\n\n**Actor:** ${s.actorExpression} (Energy: ${s.actorEnergy}/10)`).join('\n\n---\n\n')}`;
+    const blob = new Blob([md], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'screenplay.md';
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [activeScenes, activeMeta]);
+
+  /* ---- Download Plain Text ---- */
+  const handleDownloadText = useCallback(() => {
+    const txt = `${activeMeta.title}\nBy ${activeMeta.actor} | ${activeMeta.company} | ${activeMeta.runtime}\n\n${'='.repeat(60)}\n\n${activeScenes.map(s => `SCENE ${s.sceneNum}: ${s.name} (${s.timingStart}-${s.timingEnd}s)\n\nDialogue:\n${s.dialogue}\n\nAction:\n${s.action}\n\nCamera: ${s.cameraShot}, ${s.cameraAngle}\nActor: ${s.actorExpression} (Energy ${s.actorEnergy}/10)`).join('\n\n' + '-'.repeat(60) + '\n\n')}`;
+    const blob = new Blob([txt], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'screenplay.txt';
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [activeScenes, activeMeta]);
+
   /* ---- Save & Share ---- */
   const [isSaving, setIsSaving] = useState(false);
+  const [shareUrl, setShareUrl] = useState<string | null>(null);
   const handleSaveAndShare = useCallback(async () => {
     setIsSaving(true);
     try {
@@ -501,12 +550,15 @@ export default function Phase5({ isShared = false }: Phase5Props) {
       if (!response.ok) throw new Error('Failed to save content');
       const result = await response.json();
 
-      // Copy share link to clipboard
+      // Store URL and copy to clipboard
+      setShareUrl(result.shareUrl);
       await navigator.clipboard.writeText(result.shareUrl);
-      alert(`✅ Content saved!\n\nShare URL copied to clipboard:\n${result.shareUrl}`);
+      setToast('✅ Content saved & link copied to clipboard!');
+      setTimeout(() => setToast(null), 4000);
     } catch (error) {
       console.error('Save error:', error);
-      alert('❌ Failed to save content. Check console for details.');
+      setToast('❌ Failed to save content. Try again.');
+      setTimeout(() => setToast(null), 4000);
     } finally {
       setIsSaving(false);
     }
@@ -1117,7 +1169,7 @@ export default function Phase5({ isShared = false }: Phase5Props) {
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.35, delay: 0.1, ease: easeOut }}
-          className="mb-6"
+          className="mb-6 no-print"
         >
           <div className="flex gap-1 overflow-x-auto pb-1 scrollbar-thin">
             {TABS.map((tab) => {
@@ -1148,6 +1200,7 @@ export default function Phase5({ isShared = false }: Phase5Props) {
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, delay: 0.15, ease: easeOut }}
+          className="no-print"
         >
           <Card phaseAccent={ACCENT} className="p-5 md:p-6">
             <AnimatePresence mode="wait">
@@ -1181,7 +1234,7 @@ export default function Phase5({ isShared = false }: Phase5Props) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.4, duration: 0.3 }}
-          className="mt-8 flex flex-col sm:flex-row items-center justify-between gap-4"
+          className="mt-8 flex flex-col sm:flex-row items-center justify-between gap-4 no-print"
         >
           {!isShared && (
             <button
@@ -1256,15 +1309,62 @@ export default function Phase5({ isShared = false }: Phase5Props) {
               <Download size={14} />
               Download JSON Envelope
             </button>
+            <button
+              onClick={handleDownloadCSV}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium bg-transparent border border-border-subtle text-text-secondary hover:bg-bg-tertiary hover:text-text-primary transition-all"
+            >
+              <FileText size={14} />
+              Download CSV
+            </button>
+            <button
+              onClick={handleDownloadMarkdown}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium bg-transparent border border-border-subtle text-text-secondary hover:bg-bg-tertiary hover:text-text-primary transition-all"
+            >
+              <FileText size={14} />
+              Download Markdown
+            </button>
+            <button
+              onClick={handleDownloadText}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium bg-transparent border border-border-subtle text-text-secondary hover:bg-bg-tertiary hover:text-text-primary transition-all"
+            >
+              <FileText size={14} />
+              Download Text
+            </button>
             {!isShared && (
-              <button
-                onClick={() => navigate('/phase/6')}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold text-white transition-all hover:opacity-90"
-                style={{ backgroundColor: '#F59E0B' }}
-              >
-                <Zap size={14} />
-                Open in Node Editor
-              </button>
+              <>
+                <button
+                  onClick={() => navigate('/phase/2')}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold text-white transition-all hover:opacity-90"
+                  style={{ backgroundColor: '#6366F1' }}
+                >
+                  <ChevronLeft size={14} />
+                  Back to Hooks (Phase 2)
+                </button>
+                <button
+                  onClick={() => navigate('/phase/4')}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold text-white transition-all hover:opacity-90"
+                  style={{ backgroundColor: '#3B82F6' }}
+                >
+                  <Clapperboard size={14} />
+                  Edit Screenplay (Phase 4)
+                </button>
+                <button
+                  onClick={() => navigate('/phase/3')}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold text-white transition-all hover:opacity-90"
+                  style={{ backgroundColor: '#EC4899' }}
+                >
+                  <RefreshCw size={14} />
+                  Regenerate Screenplay
+                </button>
+                <button
+                  onClick={() => navigate('/phase/6')}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold text-white transition-all hover:opacity-90"
+                  style={{ backgroundColor: '#F59E0B' }}
+                >
+                  <Zap size={14} />
+                  Open in Node Editor
+                </button>
+              </>
             )}
           </div>
         </motion.div>

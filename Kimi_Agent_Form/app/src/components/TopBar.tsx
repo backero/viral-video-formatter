@@ -9,6 +9,7 @@ const pageTitles: Record<string, string> = {
   '/phase/3': 'Phase 3: Execution',
   '/phase/4': 'Phase 4: Validation',
   '/phase/5': 'Phase 5: Output',
+  '/phase/6': 'Phase 6: Node Editor',
 };
 
 const currentPhaseMap: Record<string, number> = {
@@ -18,6 +19,7 @@ const currentPhaseMap: Record<string, number> = {
   '/phase/3': 3,
   '/phase/4': 4,
   '/phase/5': 5,
+  '/phase/6': 6,
 };
 
 export function TopBar() {
@@ -28,8 +30,13 @@ export function TopBar() {
 
   return (
     <header className="sticky top-0 z-40 h-topbar bg-bg-primary/80 backdrop-blur-xl border-b border-border-subtle flex items-center px-6">
-      <div className="flex items-center flex-1 min-w-0">
+      <div className="flex items-center flex-1 min-w-0 gap-3">
         <h1 className="text-base font-medium text-text-primary truncate">{pageTitle}</h1>
+        {currentPhase > 0 && (
+          <span className="text-xs text-text-tertiary bg-bg-tertiary px-2 py-1 rounded">
+            Step {currentPhase} of 6
+          </span>
+        )}
       </div>
 
       {/* Phase Progress - center */}

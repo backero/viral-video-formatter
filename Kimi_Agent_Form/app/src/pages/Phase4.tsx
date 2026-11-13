@@ -1155,8 +1155,9 @@ export default function Phase4() {
       <div className="py-10 pb-16">
 
         {validating && (
-          <div className="mb-6 flex items-center gap-2 rounded-xl border border-border-subtle bg-[#151821] p-4 text-sm text-text-secondary">
-            Validating your actual screenplay across all 58 checks — this can take 30-45 seconds...
+          <div className="mb-6 flex items-center gap-2 rounded-xl border border-info/40 bg-info/10 p-4 text-sm text-info">
+            <RefreshCw className="w-4 h-4 animate-spin" />
+            Validating screenplay on 5 critical checks (viral potential, visual pacing, research fidelity). ETA: 8-10 seconds...
           </div>
         )}
         {validationError && (
