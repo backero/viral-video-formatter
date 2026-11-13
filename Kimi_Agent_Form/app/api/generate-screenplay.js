@@ -85,9 +85,18 @@ export default async function handler(req, res) {
       'EN': 'English'
     }[detectedLanguage] || 'English';
 
-    // Check if input is Thanglish (romanized Tamil)
+    // Check if input is Thanglish (romanized Tamil). Base the Unicode check on
+    // the user's own research text only, not the full allText blend: topic/
+    // whyTheyCare/proof can come from an earlier AI-extracted nugget whose own
+    // Thanglish detection may have missed the threshold, leaving real Tamil
+    // Unicode in those fields. Checking allText would see that leftover script
+    // and wrongly conclude "this is genuine Tamil, not Thanglish" — disabling
+    // both the Thanglish prompt instructions AND the transliteration
+    // safety-net for the whole response. The research dump is always what the
+    // user physically typed in Roman letters, so it's the reliable signal.
     const tamilUnicodeRegex = /[஀-௿]/g;
-    const isThanglish = detectedLanguage === 'TA' && !tamilUnicodeRegex.test(allText);
+    const isThanglish =
+      detectedLanguage === 'TA' && (research ? !tamilUnicodeRegex.test(research) : !tamilUnicodeRegex.test(allText));
 
     const outputFormat = isThanglish ? 'Tamil Thanglish (romanized with Roman letters ONLY)' : languageName;
 
