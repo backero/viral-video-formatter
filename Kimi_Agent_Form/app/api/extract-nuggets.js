@@ -127,13 +127,19 @@ export default async function handler(req, res) {
     const tamilUnicodeRegex = /[஀-௿]/g;
     const isThanglish = detectedLanguage === 'TA' && !tamilUnicodeRegex.test(research);
 
-    const outputFormat = isThanglish
-      ? `${languageName} (in romanized/Thanglish format like: kai, naan, tha, um, ku, etc - NOT Tamil script)`
-      : languageName;
+    const outputFormat = isThanglish ? 'Tamil Thanglish (romanized with Roman letters ONLY)' : languageName;
 
     const prompt = `You are an expert viral video creator. Analyze this research and extract 3 compelling "nuggets" (viral hooks) that would make people stop scrolling.
 
-CRITICAL INSTRUCTION: This content is written in ${languageName}. You MUST respond in ${outputFormat} ONLY. Do not translate to any other language. Preserve the original language throughout your response.${isThanglish ? ' If the input is romanized Tamil (Thanglish), RESPOND IN THANGLISH ROMANIZATION - use characters like a, e, i, o, u, k, t, n, p, m, etc. NOT Tamil Unicode script.' : ''}
+CRITICAL INSTRUCTION: This content is written in ${languageName}. You MUST respond in ${outputFormat} ONLY.${isThanglish ? `
+
+**IMPORTANT - THANGLISH MODE ACTIVATED:**
+- Output MUST be in Tamil Thanglish (romanized Tamil using ONLY Roman alphabet a-z)
+- Use ONLY: a, e, i, o, u, k, t, n, p, m, r, l, s, h, v, y, j, c, zh, ng, sh, ch, th, etc
+- ABSOLUTELY NO Tamil Unicode characters (ஆ, ை, ு, ன், etc)
+- Examples of correct format: "nala", "kai", "un", "tha", "ku", "panuven", "sollran"
+- ALL text including hooks, titles, explanations MUST be romanized Tamil only
+` : ''}`
 
 Research Content:
 ${research}

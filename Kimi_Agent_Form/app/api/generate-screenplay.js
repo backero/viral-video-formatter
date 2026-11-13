@@ -137,15 +137,21 @@ export default async function handler(req, res) {
     const tamilUnicodeRegex = /[஀-௿]/g;
     const isThanglish = detectedLanguage === 'TA' && !tamilUnicodeRegex.test(allText);
 
-    const outputFormat = isThanglish
-      ? `${languageName} (in romanized/Thanglish format like: kai, naan, tha, um, ku, etc - NOT Tamil script)`
-      : languageName;
+    const outputFormat = isThanglish ? 'Tamil Thanglish (romanized with Roman letters ONLY)' : languageName;
 
     const durationPerScene = Math.ceil(lengthSec / 5);
 
     const prompt = `You are a viral video director. Create a 5-scene screenplay for a ${lengthSec}s video about: "${topic}"
 
-CRITICAL INSTRUCTION: This content is written in ${languageName}. You MUST respond in ${outputFormat} ONLY. Do not translate. Preserve the original language throughout the screenplay, all dialogue, descriptions, and every field.${isThanglish ? ' If the input is romanized Tamil (Thanglish), RESPOND IN THANGLISH ROMANIZATION - use characters like a, e, i, o, u, k, t, n, p, m, etc. NOT Tamil Unicode script.' : ''}
+CRITICAL INSTRUCTION: This content is written in ${languageName}. You MUST respond in ${outputFormat} ONLY. Do not translate. Preserve the original language throughout the screenplay, all dialogue, descriptions, and every field.${isThanglish ? `
+
+**IMPORTANT - THANGLISH MODE ACTIVATED:**
+- Output MUST be in Tamil Thanglish (romanized Tamil using ONLY Roman alphabet a-z)
+- Use ONLY: a, e, i, o, u, k, t, n, p, m, r, l, s, h, v, y, j, c, zh, ng, sh, ch, th, etc
+- ABSOLUTELY NO Tamil Unicode characters (ஆ, ை, ு, ன், etc)
+- Examples of correct format: "nala", "kai", "un", "tha", "ku", "panuven", "sollran"
+- ALL dialogue, actions, visuals, audio descriptions MUST be romanized Tamil only
+` : ''}`
 
 Context:
 - Why people care: ${whyTheyCare || 'Unknown'}
