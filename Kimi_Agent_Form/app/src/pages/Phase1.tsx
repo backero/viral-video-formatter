@@ -364,7 +364,7 @@ export default function Phase1() {
     const snapshot = {
       ...data,
       date, creator, actor, company, platform, estimatedLength, aspectRatio,
-      actorCount, language, research,
+      actorCount, research,
       nuggetOptions: apiNuggets ? apiNuggets.map((n: any) => n._raw) : null,
       selectedNuggetIndex: selectedNugget,
       niche, subNiche, thePoint, whyTheyCare, theProof, actionableTakeaway,
@@ -381,7 +381,7 @@ export default function Phase1() {
     const snapshot = {
       ...data,
       date, creator, actor, company, platform, estimatedLength, aspectRatio,
-      actorCount, language, research,
+      actorCount, research,
       nuggetOptions: apiNuggets ? apiNuggets.map((n: any) => n._raw) : null,
       selectedNuggetIndex: selectedNugget,
       niche, subNiche, thePoint, whyTheyCare, theProof, actionableTakeaway,
