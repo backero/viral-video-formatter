@@ -24,9 +24,9 @@ function detectLanguage(text) {
   // Tamil Thanglish detection (romanized Tamil)
   // Common Tamil Thanglish patterns: word endings and suffixes
   const tamilThanglishPatterns = [
-    /\b(kai|naan|ivan|avan|athey|indha|intha|enna|yenna|sollran|sollrathu)\b/gi,  // Common Tamil words
-    /\w+(ku|nu|tha|um|ae|am|an|en|ir)\b/gi,  // Tamil suffixes
-    /\b(oru|rendu|munn|naalu|ayiru|aaru|ezhulvathu|enpathu)\b/gi,  // Tamil numbers/quantifiers
+    /\b(kai|nala|iruku|naan|ivan|avan|athey|indha|intha|enna|yenna|sollran|sollrathu|atha|la|le|nu|ma|panivu|pannuren|pannalam|irundhalen|ah|eh|eh|pannura|pannitu|parrindhuki|panninum|pottiya)\b/gi,
+    /\w+(ku|nu|tha|um|ae|am|an|en|ir)\b/gi,
+    /\b(oru|rendu|munn|naalu|ayiru|aaru|ezhulvathu|enpathu)\b/gi,
   ];
 
   let tamilThanglishScore = 0;
@@ -88,7 +88,7 @@ RESPOND ONLY IN THANGLISH (Tamil in Roman letters).
 - EXAMPLES OF CORRECT THANGLISH: "kai"="கை", "nala"="நல", "tha"="தா", "panuven"="பணுவேன்", "naan"="நான்"
 - WRITE USING ONLY: a-z, 0-9, spaces, punctuation. NEVER use Tamil Unicode letters.
 - ALL output: title, point, whyItWorks, whyTheyCare, proof MUST be 100% Roman letters ONLY
-` : ''}`
+` : ''}
 
 Research Content:
 ${research}
@@ -141,10 +141,7 @@ Return ONLY valid JSON, no other text. ALL TEXT MUST BE IN ${languageName.toUppe
       throw new Error('API did not return valid nugget array');
     }
 
-    // Check if input is Thanglish and transliterate if needed
-    const tamilUnicodeRegex = /[஀-௿]/g;
-    const isThanglish = detectedLanguage === 'TA' && !tamilUnicodeRegex.test(research);
-
+    // Transliterate to Thanglish if needed
     const finalNuggets = isThanglish ? transliterateResponse(nuggets.slice(0, 3)) : nuggets.slice(0, 3);
 
     return res.status(200).json({

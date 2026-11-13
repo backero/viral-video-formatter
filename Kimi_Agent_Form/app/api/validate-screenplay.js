@@ -24,9 +24,9 @@ function detectLanguage(text) {
   // Tamil Thanglish detection (romanized Tamil)
   // Common Tamil Thanglish patterns: word endings and suffixes
   const tamilThanglishPatterns = [
-    /\b(kai|naan|ivan|avan|athey|indha|intha|enna|yenna|sollran|sollrathu)\b/gi,  // Common Tamil words
-    /\w+(ku|nu|tha|um|ae|am|an|en|ir)\b/gi,  // Tamil suffixes
-    /\b(oru|rendu|munn|naalu|ayiru|aaru|ezhulvathu|enpathu)\b/gi,  // Tamil numbers/quantifiers
+    /\b(kai|nala|iruku|naan|ivan|avan|athey|indha|intha|enna|yenna|sollran|sollrathu|atha|la|le|nu|ma|panivu|pannuren|pannalam|irundhalen|ah|eh|pannura|pannitu|parrindhuki|panninum|pottiya)\b/gi,
+    /\w+(ku|nu|tha|um|ae|am|an|en|ir)\b/gi,
+    /\b(oru|rendu|munn|naalu|ayiru|aaru|ezhulvathu|enpathu)\b/gi,
   ];
 
   let tamilThanglishScore = 0;
@@ -238,10 +238,7 @@ Return exactly ${CHECKS.length} objects, one per check ID listed above, in the s
       throw new Error('Invalid validation response structure');
     }
 
-    // Check if input is Thanglish and transliterate if needed
-    const tamilUnicodeRegex = /[஀-௿]/g;
-    const isThanglish = detectedLanguage === 'TA' && !tamilUnicodeRegex.test(screenplayText);
-
+    // Transliterate to Thanglish if needed
     const finalResults = isThanglish ? transliterateResponse(validationData.results) : validationData.results;
 
     return res.status(200).json({
