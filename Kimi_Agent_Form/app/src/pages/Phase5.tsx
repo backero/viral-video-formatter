@@ -6,7 +6,7 @@ import {
   Copy, Check, ChevronLeft,
   FileDown, Film, Clapperboard, Printer,
   Package, Shield,
-  Zap, Sparkles, CheckCircle2
+  Zap, Sparkles, CheckCircle2, Share2
 } from 'lucide-react';
 import { Layout } from '@/components/Layout';
 import { Card } from '@/components/Card';
@@ -294,7 +294,11 @@ const EVENT_TYPE_LABELS: Record<string, string> = {
 /*  MAIN COMPONENT                                                     */
 /* ================================================================== */
 
-export default function Phase5() {
+interface Phase5Props {
+  isShared?: boolean;
+}
+
+export default function Phase5({ isShared = false }: Phase5Props) {
   const navigate = useNavigate();
   const { data } = useFormData();
   const [activeTab, setActiveTab] = useState<DocTab>('all');
@@ -459,6 +463,54 @@ export default function Phase5() {
     a.click();
     URL.revokeObjectURL(url);
   }, [jsonEnvelope]);
+
+  /* ---- Save & Share ---- */
+  const [isSaving, setIsSaving] = useState(false);
+  const handleSaveAndShare = useCallback(async () => {
+    setIsSaving(true);
+    try {
+      const response = await fetch('/api/save-content', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          phase1Data: {
+            research: data.research,
+            selectedNugget: data.selectedNugget,
+            topic: data.topic,
+            whyTheyCare: data.whyTheyCare,
+            proof: data.proof,
+          },
+          phase2Data: {
+            visualHook: data.visualHook,
+            writtenHook: data.writtenHook,
+            audioHook: data.audioHook,
+          },
+          phase3Data: {
+            screenplay: data.screenplay,
+          },
+          phase4Data: {
+            validation: data.validation,
+          },
+          phase5Data: {
+            completed,
+            createdAt: new Date().toISOString(),
+          },
+        }),
+      });
+
+      if (!response.ok) throw new Error('Failed to save content');
+      const result = await response.json();
+
+      // Copy share link to clipboard
+      await navigator.clipboard.writeText(result.shareUrl);
+      alert(`✅ Content saved!\n\nShare URL copied to clipboard:\n${result.shareUrl}`);
+    } catch (error) {
+      console.error('Save error:', error);
+      alert('❌ Failed to save content. Check console for details.');
+    } finally {
+      setIsSaving(false);
+    }
+  }, [data, completed]);
 
   /* ---- Print just one section (used by each tab's own Print/PDF button,
      so "Print / PDF" on the Script tab prints only the script, not the full pack) ---- */
@@ -1131,27 +1183,45 @@ export default function Phase5() {
           transition={{ delay: 0.4, duration: 0.3 }}
           className="mt-8 flex flex-col sm:flex-row items-center justify-between gap-4"
         >
-          <button
-            onClick={() => navigate('/phase/4')}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium bg-transparent border border-border-subtle text-text-secondary hover:bg-bg-tertiary hover:text-text-primary transition-all"
-          >
-            <ChevronLeft size={14} />
-            Back to Phase 4
-          </button>
+          {!isShared && (
+            <button
+              onClick={() => navigate('/phase/4')}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium bg-transparent border border-border-subtle text-text-secondary hover:bg-bg-tertiary hover:text-text-primary transition-all"
+            >
+              <ChevronLeft size={14} />
+              Back to Phase 4
+            </button>
+          )}
 
           <div className="flex items-center gap-3 flex-wrap justify-end">
-            <button
-              onClick={handleMarkComplete}
-              disabled={completed}
-              className={cn(
-                "flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold text-white transition-all",
-                completed ? "opacity-60 cursor-default" : "hover:opacity-90"
-              )}
-              style={{ backgroundColor: '#22C55E' }}
-            >
-              <CheckCircle2 size={14} />
-              {completed ? 'Marked Complete' : 'Mark as Complete'}
-            </button>
+            {!isShared && (
+              <>
+                <button
+                  onClick={handleMarkComplete}
+                  disabled={completed}
+                  className={cn(
+                    "flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold text-white transition-all",
+                    completed ? "opacity-60 cursor-default" : "hover:opacity-90"
+                  )}
+                  style={{ backgroundColor: '#22C55E' }}
+                >
+                  <CheckCircle2 size={14} />
+                  {completed ? 'Marked Complete' : 'Mark as Complete'}
+                </button>
+                <button
+                  onClick={handleSaveAndShare}
+                  disabled={isSaving}
+                  className={cn(
+                    "flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold text-white transition-all",
+                    isSaving ? "opacity-60 cursor-wait" : "hover:opacity-90"
+                  )}
+                  style={{ backgroundColor: '#8B5CF6' }}
+                >
+                  <Share2 size={14} />
+                  {isSaving ? 'Saving...' : 'Save & Share'}
+                </button>
+              </>
+            )}
             <button
               onClick={() => printSection('script')}
               className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold text-white transition-all hover:opacity-90"
@@ -1186,14 +1256,16 @@ export default function Phase5() {
               <Download size={14} />
               Download JSON Envelope
             </button>
-            <button
-              onClick={() => navigate('/phase/6')}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold text-white transition-all hover:opacity-90"
-              style={{ backgroundColor: '#F59E0B' }}
-            >
-              <Zap size={14} />
-              Open in Node Editor
-            </button>
+            {!isShared && (
+              <button
+                onClick={() => navigate('/phase/6')}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold text-white transition-all hover:opacity-90"
+                style={{ backgroundColor: '#F59E0B' }}
+              >
+                <Zap size={14} />
+                Open in Node Editor
+              </button>
+            )}
           </div>
         </motion.div>
       </div>

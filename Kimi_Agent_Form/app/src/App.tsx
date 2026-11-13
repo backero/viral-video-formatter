@@ -6,6 +6,7 @@ import Phase3 from './pages/Phase3'
 import Phase4 from './pages/Phase4'
 import Phase5 from './pages/Phase5'
 import Phase6 from './pages/Phase6'
+import Share from './pages/Share'
 import { FormDataProvider } from './context/FormDataContext'
 
 export default function App() {
@@ -19,6 +20,7 @@ export default function App() {
         <Route path="/phase/4" element={<Phase4 />} />
         <Route path="/phase/5" element={<Phase5 />} />
         <Route path="/phase/6" element={<Phase6 />} />
+        <Route path="/share/:contentId" element={<Share />} />
       </Routes>
     </FormDataProvider>
   )
