@@ -272,8 +272,8 @@ export default async function handler(req, res) {
 
     const mergedResults = chunkResults.flat();
 
-    // Output in same language as input. Apply transliteration if input was Thanglish
-    const finalResults = detectedLanguage === 'TA' && isThanglish ? transliterateResponse(mergedResults) : mergedResults;
+    // ALWAYS transliterate when Tamil is detected (Thanglish or Unicode)
+    const finalResults = detectedLanguage === 'TA' ? transliterateResponse(mergedResults) : mergedResults;
 
     return res.status(200).json({
       success: true,

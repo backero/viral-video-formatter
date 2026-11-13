@@ -140,8 +140,8 @@ Return ONLY valid JSON, no other text. ALL TEXT MUST BE IN ${languageName.toUppe
       throw new Error('API did not return valid nugget array');
     }
 
-    // Use language as-is from input. If Thanglish input, apply transliteration if needed
-    const finalNuggets = detectedLanguage === 'TA' && isThanglish ? transliterateResponse(nuggets.slice(0, 3)) : nuggets.slice(0, 3);
+    // ALWAYS transliterate when Tamil is detected (Thanglish or Unicode)
+    const finalNuggets = detectedLanguage === 'TA' ? transliterateResponse(nuggets.slice(0, 3)) : nuggets.slice(0, 3);
 
     return res.status(200).json({
       success: true,

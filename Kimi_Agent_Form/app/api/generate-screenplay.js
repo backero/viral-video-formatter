@@ -178,8 +178,8 @@ ALL TEXT MUST BE IN ${languageName.toUpperCase()}. No English translations or mi
       throw new Error('API did not return 5 scenes');
     }
 
-    // Output in same language as input. Apply transliteration if input was Thanglish
-    const finalScenes = detectedLanguage === 'TA' && isThanglish ? transliterateResponse(scenes.slice(0, 5)) : scenes.slice(0, 5);
+    // ALWAYS transliterate when Tamil is detected (Thanglish or Unicode)
+    const finalScenes = detectedLanguage === 'TA' ? transliterateResponse(scenes.slice(0, 5)) : scenes.slice(0, 5);
 
     return res.status(200).json({
       success: true,
