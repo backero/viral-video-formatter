@@ -115,6 +115,89 @@ const CHECKS = [
   { id: 'RV01', name: 'Reference Video Match Compliance', desc: 'If a reference video/element to copy was supplied, check the screenplay actually incorporates it; if none was supplied, mark N/A.' },
 ];
 
+function chunkArray(arr, size) {
+  const chunks = [];
+  for (let i = 0; i < arr.length; i += size) chunks.push(arr.slice(i, i + size));
+  return chunks;
+}
+
+// Run checks in parallel batches instead of one 58-check completion — cuts
+// wall-clock time to roughly the slowest batch instead of the sum of all 58.
+const CHECK_CHUNKS = chunkArray(CHECKS, 15);
+
+async function validateChunk({ apiKey, screenplayText, chunk, languageName, outputFormat, isThanglish }) {
+  const checksText = chunk.map((c) => `${c.id} - ${c.name}: ${c.desc}`).join('\n');
+
+  const prompt = `You are a strict short-form video script quality validator. Evaluate this actual screenplay against each of the ${chunk.length} checks below. Be honest — most real first-draft screenplays fail at least a few checks.
+
+SCREENPLAY (the ONLY content you may reference — do not invent or reference any other topic/example):
+${screenplayText}
+
+CHECKS TO RUN:
+${checksText}
+
+CRITICAL INSTRUCTIONS:
+- "evidence" and "suggestedFix" must ONLY reference scenes, dialogue, numbers, and details that literally appear in the SCREENPLAY above.
+- NEVER invent or reference an unrelated example topic (e.g. skincare, serums, or any product/subject not in the screenplay above). If illustrating a rewrite, rewrite using the ACTUAL dialogue words from the screenplay.
+- If a check genuinely does not apply given the information available (e.g. no reference video was mentioned, no multi-language mixing present), mark it "N/A" rather than forcing a PASS/FAIL.
+- "scenesAffected" must be an array of the scene numbers (integers) relevant to a FAIL result; use [] for PASS/N/A or checks that are global rather than scene-specific.
+- This screenplay is written in ${languageName}. Respond entirely in ${outputFormat} — all evidence and suggestedFix text must be in ${outputFormat}, field keys stay in English.${isThanglish ? `
+
+**CRITICAL - THANGLISH ONLY - NO TAMIL SCRIPT ALLOWED:**
+RESPOND ONLY IN THANGLISH (Tamil in Roman letters).
+- Character mapping: a=அ/ஆ, e=எ/ஏ, i=இ/ஈ, o=ஒ/ஓ, u=உ/ஊ
+- k=க, ng=ங, ch=ச, ny=ஞ, t=ட, n=ண/ந/ன, th=த, p=ப, m=ம, y=ய, r=ர, l=ல, v=வ, zh=ழ, s=ஸ, h=ஹ, j=ஜ, sh=ஷ
+- EXAMPLES: "kai"="கை", "nala"="நல", "tha"="தா", "panuven"="பணுவேன்", "naan"="நான்"
+- WRITE USING ONLY: a-z, 0-9, spaces, punctuation. NEVER use Tamil Unicode letters.
+- ALL evidence and suggestedFix MUST be 100% Roman letters ONLY` : ''}
+
+Return ONLY valid JSON (no markdown fences, no preamble), an array with exactly one object per check listed above, in the same order, this exact shape:
+{
+  "results": [
+    { "id": "GR01", "result": "PASS" or "FAIL" or "N/A", "evidence": "one specific sentence citing what in THIS screenplay supports the verdict", "suggestedFix": "if FAIL, one concrete fix using only this screenplay's actual content; otherwise empty string", "scenesAffected": [] }
+  ]
+}
+
+Return exactly ${chunk.length} objects, one per check ID listed above, in the same order.`;
+
+  const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`,
+      'HTTP-Referer': 'https://viralform.app',
+      'X-Title': 'Viral Form Video Creator',
+    },
+    body: JSON.stringify({
+      model: 'openai/gpt-6.1-terra-pro',
+      messages: [{ role: 'user', content: prompt }],
+      temperature: 0.4,
+      max_tokens: 2500,
+    }),
+  });
+
+  if (!response.ok) {
+    const errData = await response.json();
+    throw new Error(errData.error?.message || `OpenRouter API error: ${response.status}`);
+  }
+
+  const data = await response.json();
+  const content = data.choices[0]?.message?.content;
+
+  if (!content) {
+    throw new Error('No content in API response');
+  }
+
+  const cleaned = content.replace(/```json|```/g, '').trim();
+  const parsed = JSON.parse(cleaned);
+
+  if (!parsed.results || !Array.isArray(parsed.results)) {
+    throw new Error('Invalid validation response structure');
+  }
+
+  return parsed.results;
+}
+
 // Vercel Serverless Function for AI Screenplay Validation
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -169,77 +252,16 @@ export default async function handler(req, res) {
 
     const outputFormat = isThanglish ? 'Tamil Thanglish (romanized with Roman letters ONLY)' : languageName;
 
-    const checksText = CHECKS.map((c) => `${c.id} - ${c.name}: ${c.desc}`).join('\n');
+    const chunkResults = await Promise.all(
+      CHECK_CHUNKS.map((chunk) =>
+        validateChunk({ apiKey, screenplayText, chunk, languageName, outputFormat, isThanglish })
+      )
+    );
 
-    const prompt = `You are a strict short-form video script quality validator. Evaluate this actual screenplay against each of the ${CHECKS.length} checks below. Be honest — most real first-draft screenplays fail at least a few checks.
-
-SCREENPLAY (the ONLY content you may reference — do not invent or reference any other topic/example):
-${screenplayText}
-
-CHECKS TO RUN:
-${checksText}
-
-CRITICAL INSTRUCTIONS:
-- "evidence" and "suggestedFix" must ONLY reference scenes, dialogue, numbers, and details that literally appear in the SCREENPLAY above.
-- NEVER invent or reference an unrelated example topic (e.g. skincare, serums, or any product/subject not in the screenplay above). If illustrating a rewrite, rewrite using the ACTUAL dialogue words from the screenplay.
-- If a check genuinely does not apply given the information available (e.g. no reference video was mentioned, no multi-language mixing present), mark it "N/A" rather than forcing a PASS/FAIL.
-- "scenesAffected" must be an array of the scene numbers (integers) relevant to a FAIL result; use [] for PASS/N/A or checks that are global rather than scene-specific.
-- This screenplay is written in ${languageName}. Respond entirely in ${outputFormat} — all evidence and suggestedFix text must be in ${outputFormat}, field keys stay in English.${isThanglish ? `
-
-**CRITICAL - THANGLISH ONLY - NO TAMIL SCRIPT ALLOWED:**
-RESPOND ONLY IN THANGLISH (Tamil in Roman letters).
-- Character mapping: a=அ/ஆ, e=எ/ஏ, i=இ/ஈ, o=ஒ/ஓ, u=உ/ஊ
-- k=க, ng=ங, ch=ச, ny=ஞ, t=ட, n=ண/ந/ன, th=த, p=ப, m=ம, y=ய, r=ர, l=ல, v=வ, zh=ழ, s=ஸ, h=ஹ, j=ஜ, sh=ஷ
-- EXAMPLES: "kai"="கை", "nala"="நல", "tha"="தா", "panuven"="பணுவேன்", "naan"="நான்"
-- WRITE USING ONLY: a-z, 0-9, spaces, punctuation. NEVER use Tamil Unicode letters.
-- ALL evidence and suggestedFix MUST be 100% Roman letters ONLY` : ''}
-
-Return ONLY valid JSON (no markdown fences, no preamble), an array with exactly one object per check listed above, in the same order, this exact shape:
-{
-  "results": [
-    { "id": "GR01", "result": "PASS" or "FAIL" or "N/A", "evidence": "one specific sentence citing what in THIS screenplay supports the verdict", "suggestedFix": "if FAIL, one concrete fix using only this screenplay's actual content; otherwise empty string", "scenesAffected": [] }
-  ]
-}
-
-Return exactly ${CHECKS.length} objects, one per check ID listed above, in the same order.`;
-
-    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
-        'HTTP-Referer': 'https://viralform.app',
-        'X-Title': 'Viral Form Video Creator',
-      },
-      body: JSON.stringify({
-        model: 'openai/gpt-6.1-terra-pro',
-        messages: [{ role: 'user', content: prompt }],
-        temperature: 0.4,
-        max_tokens: 8000,
-      }),
-    });
-
-    if (!response.ok) {
-      const errData = await response.json();
-      throw new Error(errData.error?.message || `OpenRouter API error: ${response.status}`);
-    }
-
-    const data = await response.json();
-    const content = data.choices[0]?.message?.content;
-
-    if (!content) {
-      throw new Error('No content in API response');
-    }
-
-    const cleaned = content.replace(/```json|```/g, '').trim();
-    const validationData = JSON.parse(cleaned);
-
-    if (!validationData.results || !Array.isArray(validationData.results)) {
-      throw new Error('Invalid validation response structure');
-    }
+    const mergedResults = chunkResults.flat();
 
     // Transliterate to Thanglish if needed
-    const finalResults = isThanglish ? transliterateResponse(validationData.results) : validationData.results;
+    const finalResults = isThanglish ? transliterateResponse(mergedResults) : mergedResults;
 
     return res.status(200).json({
       success: true,
