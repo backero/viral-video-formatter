@@ -460,11 +460,6 @@ export default function Phase5() {
     URL.revokeObjectURL(url);
   }, [jsonEnvelope]);
 
-  /* ---- Handle Print ---- */
-  const handlePrint = useCallback(() => {
-    window.print();
-  }, []);
-
   /* ---- Print just one section (used by each tab's own Print/PDF button,
      so "Print / PDF" on the Script tab prints only the script, not the full pack) ---- */
   const printSection = useCallback((id: string) => {
@@ -1158,12 +1153,12 @@ export default function Phase5() {
               {completed ? 'Marked Complete' : 'Mark as Complete'}
             </button>
             <button
-              onClick={handlePrint}
+              onClick={() => printSection('script')}
               className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold text-white transition-all hover:opacity-90"
               style={{ backgroundColor: ACCENT }}
             >
               <FileDown size={14} />
-              Download All as PDF
+              Download Script as PDF
             </button>
             <button
               onClick={() =>
