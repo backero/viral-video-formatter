@@ -66,6 +66,10 @@ export interface FormData {
   phase2SelectedCombo: string | null;
   phase2CtaText: string;
   phase2Hooks: Record<string, { status: string; content: string; rating: string; visualQuality?: string }> | null;
+  // Set when this session was loaded from (or has been saved to) a share link —
+  // lets "Save & Share" update that same link instead of minting a new one
+  // every time, so collaborators editing from the shared link save back to it.
+  sharedContentId: string | null;
 }
 
 interface FormDataContextValue {
@@ -111,6 +115,7 @@ const defaultData: FormData = {
   phase2SelectedCombo: null,
   phase2CtaText: '',
   phase2Hooks: null,
+  sharedContentId: null,
 };
 
 const FormDataContext = createContext<FormDataContextValue | undefined>(undefined);

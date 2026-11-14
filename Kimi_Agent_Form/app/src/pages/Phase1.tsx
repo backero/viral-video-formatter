@@ -406,6 +406,11 @@ export default function Phase1() {
 
   const handleSubmit = () => {
     if (!isFormValid) return;
+    // If the topic itself changed since the last time Phase 2+ were built, the
+    // old phase2Hooks/screenplay/validation are for a different video and must
+    // not leak forward — otherwise Phase 2 silently shows stale hook cards from
+    // a previous topic instead of deriving fresh ones from this submission.
+    const topicChanged = data.thePoint !== thePoint || data.selectedNuggetIndex !== selectedNugget;
     const snapshot = {
       ...data,
       date, creator, actor, company, platform, estimatedLength, aspectRatio,
@@ -416,6 +421,14 @@ export default function Phase1() {
       whyNugget, timeToValue, contentStyle, selfChecks, validationChecks,
       refUrl, copyElement, copyDescription,
       screenplay: null, // clear any previously generated screenplay so Phase 3 regenerates for this topic
+      ...(topicChanged ? {
+        phase2Hooks: null,
+        phase2ContentType: '',
+        phase2Platform: '',
+        phase2SelectedCombo: null,
+        phase2CtaText: '',
+        sharedContentId: null, // new topic = a new video, don't overwrite the old share link
+      } : {}),
     };
     const id = saveProject(snapshot, 2, data.projectId);
     updateData({ ...snapshot, projectId: id });

@@ -300,7 +300,7 @@ interface Phase5Props {
 
 export default function Phase5({ isShared = false }: Phase5Props) {
   const navigate = useNavigate();
-  const { data } = useFormData();
+  const { data, updateData } = useFormData();
   const [activeTab, setActiveTab] = useState<DocTab>('all');
   const [printFilter, setPrintFilter] = useState<string>('all');
   const [completed, setCompleted] = useState(false);
@@ -523,6 +523,10 @@ export default function Phase5({ isShared = false }: Phase5Props) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          // Reuse the same contentId if this session already has a share link
+          // (either it created one before, or it was opened from one) so
+          // edits save back to that link instead of minting a new one.
+          contentId: data.sharedContentId || undefined,
           phase1Data: {
             research: data.research,
             selectedNuggetIndex: data.selectedNuggetIndex,
@@ -551,8 +555,9 @@ export default function Phase5({ isShared = false }: Phase5Props) {
       if (!response.ok) throw new Error('Failed to save content');
       const result = await response.json();
 
-      // Store URL and copy to clipboard
+      // Store URL + contentId (so the next save updates this same link) and copy to clipboard
       setShareUrl(result.shareUrl);
+      updateData({ sharedContentId: result.contentId });
       await navigator.clipboard.writeText(result.shareUrl);
       setToast('✅ Content saved & link copied to clipboard!');
       setTimeout(() => setToast(null), 4000);
@@ -563,7 +568,7 @@ export default function Phase5({ isShared = false }: Phase5Props) {
     } finally {
       setIsSaving(false);
     }
-  }, [data, completed]);
+  }, [data, completed, updateData]);
 
   /* ---- Print just one section (used by each tab's own Print/PDF button,
      so "Print / PDF" on the Script tab prints only the script, not the full pack) ---- */

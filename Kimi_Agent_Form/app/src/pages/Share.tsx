@@ -11,7 +11,6 @@ export default function Share() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [viewCount, setViewCount] = useState(0);
 
   useEffect(() => {
     const loadContent = async () => {
@@ -22,23 +21,15 @@ export default function Share() {
       }
 
       try {
-        // Fetch content
         const response = await fetch(`/api/content/${contentId}`);
         if (!response.ok) {
           throw new Error('Content not found');
         }
         const content = await response.json();
 
-        // Fetch view count
-        try {
-          const viewResponse = await fetch(`/api/content/${contentId}/view-count`);
-          if (viewResponse.ok) {
-            const viewData = await viewResponse.json();
-            setViewCount(viewData.viewCount);
-          }
-        } catch {}
-
-        // Load data into context
+        // Load data into context, and remember this contentId so that if this
+        // viewer edits and hits "Save & Share" again, it updates this same
+        // link instead of creating a new one.
         updateData({
           research: content.phase1Data?.research ?? '',
           selectedNuggetIndex: content.phase1Data?.selectedNuggetIndex ?? null,
@@ -47,6 +38,7 @@ export default function Share() {
           theProof: content.phase1Data?.proof ?? '',
           screenplay: content.phase3Data?.screenplay ?? null,
           validationChecks: content.phase4Data?.validationChecks ?? {},
+          sharedContentId: contentId,
         });
 
         setLoading(false);
@@ -95,16 +87,20 @@ export default function Share() {
       <div className="space-y-4 mb-6">
         <div className="flex items-center justify-between">
           <h1 className="text-3xl font-bold text-text-primary">Shared Screenplay</h1>
-          <div className="text-sm text-text-secondary">
-            👁️ {viewCount} {viewCount === 1 ? 'view' : 'views'}
-          </div>
+          <button
+            onClick={() => navigate('/phase/5')}
+            className="px-4 py-2 rounded-lg text-sm font-bold text-white bg-accent-input hover:opacity-90 transition-opacity"
+          >
+            Continue Editing This Project
+          </button>
         </div>
         <p className="text-text-secondary">
-          This screenplay has been shared with you. Use the links below to edit or download.
+          This screenplay has been shared with you. Click "Continue Editing" to make changes and
+          save them back to this same link.
         </p>
       </div>
 
-      {/* Display Phase 5 Output */}
+      {/* Read-only preview of Phase 5 Output */}
       <Phase5 isShared={true} />
     </Layout>
   );
