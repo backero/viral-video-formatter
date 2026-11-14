@@ -81,9 +81,46 @@ export function saveProject(
     projects.push(summary);
   }
   writeAll(projects);
+
+  // Fire-and-forget: push this save to the shared team backend so other
+  // browsers/devices see it too. Not awaited so Phase navigation stays fast;
+  // local write above already succeeded, so this is purely for team sync.
+  fetch('/api/projects', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ project: summary }),
+  }).catch((err) => console.warn('Failed to sync project to team dashboard:', err));
+
   return id;
 }
 
 export function deleteProject(id: string) {
   writeAll(readAll().filter((p) => p.id !== id));
+}
+
+/**
+ * Fetch the shared team project list from the backend. Falls back to the
+ * local cache (readAll/listProjects) if the request fails, so the Dashboard
+ * still shows something when offline.
+ */
+export async function listProjectsRemote(): Promise<ProjectSummary[]> {
+  try {
+    const response = await fetch('/api/projects');
+    if (!response.ok) throw new Error(`Failed to fetch projects: ${response.status}`);
+    const { projects } = await response.json();
+    return (projects as ProjectSummary[]).sort((a, b) => b.updatedAt - a.updatedAt);
+  } catch (err) {
+    console.warn('Failed to fetch shared projects, falling back to local cache:', err);
+    return listProjects();
+  }
+}
+
+/** Delete a project from the shared team backend (and the local cache). */
+export async function deleteProjectRemote(id: string): Promise<void> {
+  try {
+    await fetch(`/api/projects?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
+  } catch (err) {
+    console.warn('Failed to delete project from team dashboard:', err);
+  }
+  deleteProject(id);
 }

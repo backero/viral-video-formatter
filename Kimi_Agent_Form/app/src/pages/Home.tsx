@@ -20,7 +20,7 @@ import { Layout } from '@/components/Layout';
 import { StatusBadge } from '@/components/StatusBadge';
 import { cn } from '@/lib/utils';
 import { useFormData } from '@/context/FormDataContext';
-import { listProjects, deleteProject, type ProjectSummary } from '@/lib/projectStore';
+import { listProjectsRemote, deleteProjectRemote, type ProjectSummary } from '@/lib/projectStore';
 
 /* ------------------------------------------------------------------ */
 /*  Animation variants                                                  */
@@ -163,9 +163,13 @@ export default function Home() {
   const [showDateDropdown, setShowDateDropdown] = React.useState(false);
   const [projects, setProjects] = React.useState<ProjectSummary[]>([]);
 
-  React.useEffect(() => {
-    setProjects(listProjects());
+  const refreshProjects = React.useCallback(() => {
+    listProjectsRemote().then(setProjects);
   }, []);
+
+  React.useEffect(() => {
+    refreshProjects();
+  }, [refreshProjects]);
 
   const dateOptions = ['Last 7 days', 'Last 30 days', 'Last 90 days', 'All time'];
   const recentBriefs = projects.slice(0, 3);
@@ -186,8 +190,7 @@ export default function Home() {
 
   const handleDelete = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    deleteProject(id);
-    setProjects(listProjects());
+    deleteProjectRemote(id).then(refreshProjects);
   };
 
   return (
