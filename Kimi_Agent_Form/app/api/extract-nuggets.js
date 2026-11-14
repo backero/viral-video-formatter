@@ -104,24 +104,20 @@ export default async function handler(req, res) {
     const tamilUnicodeRegex = /[஀-௿]/g;
     const isThanglish = detectedLanguage === 'TA' && !tamilUnicodeRegex.test(research);
 
-    const prompt = `YOU MUST RESPOND IN PURE THANGLISH (ROMAN LETTERS ONLY) - NO EXCEPTIONS!
+    const prompt = `MIRROR THE EXACT LANGUAGE AND SCRIPT OF THE RESEARCH CONTENT BELOW. DO NOT TRANSLATE. DO NOT SWITCH LANGUAGE ON YOUR OWN.
 
 You are an expert viral video creator. Analyze this research and extract 3 compelling "nuggets" (viral hooks) that would make people stop scrolling.
 
 **CRITICAL RULES - FOLLOW EXACTLY:**
-1. RESPOND ONLY IN THANGLISH (romanized Tamil using ONLY Roman letters a-z)
-2. ZERO Tamil Unicode characters allowed
+1. Respond using the SAME words/style/language mix the user actually typed below. If they wrote romanized Tamil (Thanglish, e.g. "nalla irukku", "pannanum"), continue in that same Thanglish style. If they wrote English, respond in English. Never decide to translate or convert on your own.
+2. ZERO Tamil Unicode characters allowed under any circumstance (no script, only a-z Roman letters)
 3. ZERO non-ASCII characters allowed
 4. Every word must use ONLY: a b c d e f g h i j k l m n o p q r s t u v w x y z (and 0-9, spaces, . , ! ? - ')
-5. If you cannot write a word in Roman letters, DELETE IT and skip it
+5. If a word cannot be written in Roman letters, write it the way the user wrote it (transliterated), never in Tamil script
 6. ALL output must be 100% ASCII (copy-paste must work in English systems)
 7. Do NOT use any special symbols or Unicode
 
-LANGUAGE: ${detectedLanguage === 'TA' ? 'THANGLISH ONLY' : 'ENGLISH'}
-Research language: Tamil/Thanglish
-Response language: THANGLISH (Roman letters ONLY)
-
-Research Content:
+Research Content (match this exact language/script style in your response):
 ${research}
 
 Return ONLY valid JSON (no markdown, no explanation):

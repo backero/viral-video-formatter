@@ -13,6 +13,7 @@ export default function App() {
   return (
     <FormDataProvider>
       <Routes>
+        {/* Core Pages */}
         <Route path="/" element={<Home />} />
         <Route path="/phase/1" element={<Phase1 />} />
         <Route path="/phase/2" element={<Phase2 />} />

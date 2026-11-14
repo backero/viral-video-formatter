@@ -126,23 +126,21 @@ export default async function handler(req, res) {
 
     const durationPerScene = Math.ceil(lengthSec / 5);
 
-    const prompt = `YOU MUST RESPOND IN PURE THANGLISH (ROMAN LETTERS ONLY) - NO EXCEPTIONS!
+    const prompt = `MIRROR THE EXACT LANGUAGE AND SCRIPT OF THE CONTEXT BELOW. DO NOT TRANSLATE. DO NOT SWITCH LANGUAGE ON YOUR OWN.
 
 You are a viral video director. Create a 5-scene screenplay for a ${lengthSec}s video about: "${topic}"
 
 **CRITICAL RULES - FOLLOW EXACTLY:**
-1. RESPOND ONLY IN THANGLISH (romanized Tamil using ONLY Roman letters a-z)
-2. ZERO Tamil Unicode characters allowed
+1. Respond using the SAME words/style/language mix as the context below. If it's written in romanized Tamil (Thanglish, e.g. "nalla irukku", "pannanum"), continue in that same Thanglish style. If it's in English, respond in English. Never decide to translate or convert on your own.
+2. ZERO Tamil Unicode characters allowed under any circumstance (no script, only a-z Roman letters)
 3. ZERO non-ASCII characters allowed
 4. Every word must use ONLY: a b c d e f g h i j k l m n o p q r s t u v w x y z (and 0-9, spaces, . , ! ? - ')
-5. If you cannot write a word in Roman letters, DELETE IT and skip it
+5. If a word cannot be written in Roman letters, write it the way the context wrote it (transliterated), never in Tamil script
 6. ALL output must be 100% ASCII (copy-paste must work in English systems)
 7. Do NOT use any special symbols or Unicode
 8. MAX 20 words per dialogue line (must fit in video)
 
-LANGUAGE: ${detectedLanguage === 'TA' ? 'THANGLISH ONLY' : 'ENGLISH'}
-
-Context:
+Context (match this exact language/script style in your response):
 - Why people care: ${whyTheyCare || 'Unknown'}
 - Proof: ${proof || 'Unknown'}
 - Visual hook: ${visualHook || 'Engaging visuals'}

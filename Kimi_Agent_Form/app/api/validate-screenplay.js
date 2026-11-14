@@ -105,11 +105,11 @@ CRITICAL INSTRUCTIONS:
 - "scenesAffected" must be an array of the scene numbers (integers) relevant to a FAIL result; use [] for PASS/N/A or checks that are global.
 
 **ABSOLUTE REQUIREMENT:**
-- You MUST respond in pure romanized Tamil (Thanglish) ONLY
+- Write "evidence" and "suggestedFix" in the SAME language/script style as the SCREENPLAY above. If the screenplay is in romanized Tamil (Thanglish), respond in that same Thanglish style. If it's in English, respond in English. Never decide to translate or convert on your own.
 - Use ONLY ASCII Roman letters (a-z, A-Z), numbers (0-9), spaces, and basic punctuation
-- NEVER EVER use any Tamil Unicode characters or any non-ASCII characters
+- NEVER EVER use any Tamil Unicode characters or any non-ASCII characters, under any circumstance
 - Every single word in evidence and suggestedFix must use only a-z letters
-- If you cannot write something in pure ASCII Roman letters, SKIP IT
+- If a word cannot be written in pure ASCII Roman letters, write it the way the screenplay wrote it (transliterated), never in Tamil script
 - All evidence and suggestedFix text must be 100% ASCII-only, field keys stay in English
 
 Return ONLY valid JSON (no markdown fences, no preamble), an array with exactly one object per check listed above, in the same order, this exact shape:

@@ -304,6 +304,7 @@ export default function Phase5({ isShared = false }: Phase5Props) {
   const [activeTab, setActiveTab] = useState<DocTab>('all');
   const [printFilter, setPrintFilter] = useState<string>('all');
   const [completed, setCompleted] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
 
   const activeScenes: SceneData[] = data.screenplay
     ? data.screenplay.map((s: any) => ({
@@ -514,7 +515,7 @@ export default function Phase5({ isShared = false }: Phase5Props) {
 
   /* ---- Save & Share ---- */
   const [isSaving, setIsSaving] = useState(false);
-  const [shareUrl, setShareUrl] = useState<string | null>(null);
+  const [, setShareUrl] = useState<string | null>(null);
   const handleSaveAndShare = useCallback(async () => {
     setIsSaving(true);
     try {
@@ -524,21 +525,21 @@ export default function Phase5({ isShared = false }: Phase5Props) {
         body: JSON.stringify({
           phase1Data: {
             research: data.research,
-            selectedNugget: data.selectedNugget,
-            topic: data.topic,
+            selectedNuggetIndex: data.selectedNuggetIndex,
+            topic: data.thePoint,
             whyTheyCare: data.whyTheyCare,
-            proof: data.proof,
+            proof: data.theProof,
           },
           phase2Data: {
-            visualHook: data.visualHook,
-            writtenHook: data.writtenHook,
-            audioHook: data.audioHook,
+            visualHook: data.phase2Hooks?.visual?.content,
+            writtenHook: data.phase2Hooks?.written?.content,
+            audioHook: data.phase2Hooks?.audio?.content,
           },
           phase3Data: {
             screenplay: data.screenplay,
           },
           phase4Data: {
-            validation: data.validation,
+            validationChecks: data.validationChecks,
           },
           phase5Data: {
             completed,
@@ -1499,6 +1500,21 @@ export default function Phase5({ isShared = false }: Phase5Props) {
           )}
         </div>
       </div>
+
+      <AnimatePresence>
+        {toast && (
+          <motion.div
+            className="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 px-4 py-3 rounded-lg border no-print"
+            style={{ backgroundColor: '#252932', borderColor: '#3A4050' }}
+            initial={{ x: 20, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            exit={{ x: 20, opacity: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            <span className="text-sm text-text-primary">{toast}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </Layout>
   );
 }

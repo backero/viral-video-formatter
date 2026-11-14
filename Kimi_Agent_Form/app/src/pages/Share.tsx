@@ -7,7 +7,7 @@ import Phase5 from './Phase5';
 
 export default function Share() {
   const { contentId } = useParams<{ contentId: string }>();
-  const { setData } = useFormData();
+  const { updateData } = useFormData();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -39,19 +39,15 @@ export default function Share() {
         } catch {}
 
         // Load data into context
-        if (content.phase1Data) setData('research', content.phase1Data.research || '');
-        if (content.phase1Data?.selectedNugget) setData('selectedNugget', content.phase1Data.selectedNugget);
-        if (content.phase1Data?.topic) setData('topic', content.phase1Data.topic || '');
-        if (content.phase1Data?.whyTheyCare) setData('whyTheyCare', content.phase1Data.whyTheyCare || '');
-        if (content.phase1Data?.proof) setData('proof', content.phase1Data.proof || '');
-
-        if (content.phase2Data?.visualHook) setData('visualHook', content.phase2Data.visualHook);
-        if (content.phase2Data?.writtenHook) setData('writtenHook', content.phase2Data.writtenHook);
-        if (content.phase2Data?.audioHook) setData('audioHook', content.phase2Data.audioHook);
-
-        if (content.phase3Data?.screenplay) setData('screenplay', content.phase3Data.screenplay);
-
-        if (content.phase4Data?.validation) setData('validation', content.phase4Data.validation);
+        updateData({
+          research: content.phase1Data?.research ?? '',
+          selectedNuggetIndex: content.phase1Data?.selectedNuggetIndex ?? null,
+          thePoint: content.phase1Data?.topic ?? '',
+          whyTheyCare: content.phase1Data?.whyTheyCare ?? '',
+          theProof: content.phase1Data?.proof ?? '',
+          screenplay: content.phase3Data?.screenplay ?? null,
+          validationChecks: content.phase4Data?.validationChecks ?? {},
+        });
 
         setLoading(false);
       } catch (err) {
@@ -62,7 +58,7 @@ export default function Share() {
     };
 
     loadContent();
-  }, [contentId, setData]);
+  }, [contentId, updateData]);
 
   if (loading) {
     return (
