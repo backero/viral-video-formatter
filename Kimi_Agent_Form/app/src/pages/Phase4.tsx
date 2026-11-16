@@ -914,7 +914,7 @@ export default function Phase4() {
         screenplay: updatedScreenplay,
       });
     }
-  }, [scenes, data, updateData]);
+  }, [scenes]);
 
 
   const handleOverride = useCallback((checkId: string) => {
