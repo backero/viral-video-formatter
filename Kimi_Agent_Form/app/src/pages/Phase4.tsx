@@ -781,7 +781,7 @@ function RoleApprovalCard({
 
 export default function Phase4() {
   const navigate = useNavigate();
-  const { data } = useFormData();
+  const { data, updateData } = useFormData();
 
   // Memoized on data.screenplay so its identity stays stable across re-renders —
   // otherwise runRealValidation's identity changes every render, re-triggering the

@@ -136,7 +136,6 @@ const AUTO_SCREENPLAY: SceneBeat[] = [
 export default function Phase3() {
   const navigate = useNavigate();
   const { data, updateData } = useFormData();
-  const [generatedScenes, setGeneratedScenes] = useState<SceneBeat[] | null>(data.screenplay);
   const [loadingScreenplay, setLoadingScreenplay] = useState(false);
   const [screenplayError, setScreenplayError] = useState<string | null>(null);
 
@@ -180,7 +179,6 @@ export default function Phase3() {
         return res.json();
       })
       .then((json) => {
-        setGeneratedScenes(json.scenes);
         updateData({ screenplay: json.scenes });
       })
       .catch((err) => {
@@ -225,7 +223,7 @@ export default function Phase3() {
   const autoFormatSkin = 'Whiteboard / ABR Hybrid';
   const actorName = actorCount >= 1 ? (data.actor || 'ACTOR').toUpperCase() : 'VOICEOVER';
 
-  const scenes = generatedScenes ?? AUTO_SCREENPLAY;
+  const scenes = data.screenplay ?? AUTO_SCREENPLAY;
   const totalRuntime = scenes[scenes.length - 1]?.timingEnd || 30;
   const totalWords = scenes.reduce((sum, s) => sum + s.dialogue.split(/\s+/).filter(Boolean).length, 0);
   const cutCount = scenes.reduce((sum, s) => sum + s.editMarkers.length, 0);
@@ -327,7 +325,7 @@ export default function Phase3() {
             </button>
           </div>
         )}
-        {!loadingScreenplay && !screenplayError && generatedScenes && (
+        {!loadingScreenplay && !screenplayError && data.screenplay && (
           <div className="mb-6 flex items-center justify-between gap-2 rounded-xl border border-success/40 bg-success/10 p-4 text-sm text-success">
             <span>AI-generated screenplay for: "{effectiveTopic}"</span>
             <button
@@ -338,7 +336,7 @@ export default function Phase3() {
             </button>
           </div>
         )}
-        {!loadingScreenplay && !screenplayError && !generatedScenes && !effectiveTopic && (
+        {!loadingScreenplay && !screenplayError && !data.screenplay && !effectiveTopic && (
           <div className="mb-6 rounded-xl border border-border-subtle bg-[#151821] p-4 text-sm text-text-secondary">
             No topic found from Phase 1 — showing example screenplay. Go back to Phase 1 and select a nugget to generate a real one.
           </div>
