@@ -886,37 +886,35 @@ export default function Phase4() {
 
   // ═══ SYNC EDITED SCENES BACK TO FORMDATA SCREENPLAY ═══
   useEffect(() => {
-    if (appliedFixes.length > 0) {
-      // Convert edited scenes back to SceneBeat format for screenplay storage
-      const updatedScreenplay = scenes.map(s => ({
-        sceneNum: s.sceneNum,
-        name: s.name,
-        timingStart: s.timingStart,
-        timingEnd: s.timingEnd,
-        duration: s.duration,
-        dialogue: s.dialogue,
-        action: s.action,
-        camera: { shot: s.cameraShot, angle: s.cameraAngle, movement: s.cameraMovement },
-        actor: { expression: s.actorExpression, energy: s.actorEnergy, pace: s.actorPace },
-        visual: s.visual,
-        audio: s.audio,
-        editMarkers: typeof s.editMarkers === 'string' ? JSON.parse(s.editMarkers) : s.editMarkers,
-      }));
+    // Convert edited scenes back to SceneBeat format for screenplay storage
+    const updatedScreenplay = scenes.map(s => ({
+      sceneNum: s.sceneNum,
+      name: s.name,
+      timingStart: s.timingStart,
+      timingEnd: s.timingEnd,
+      duration: s.duration,
+      dialogue: s.dialogue,
+      action: s.action,
+      camera: { shot: s.cameraShot, angle: s.cameraAngle, movement: s.cameraMovement },
+      actor: { expression: s.actorExpression, energy: s.actorEnergy, pace: s.actorPace },
+      visual: s.visual,
+      audio: s.audio,
+      editMarkers: typeof s.editMarkers === 'string' ? JSON.parse(s.editMarkers) : s.editMarkers,
+    }));
 
-      // Update FormDataContext screenplay
-      updateData({ screenplay: updatedScreenplay });
+    // Update FormDataContext screenplay immediately on any scene change
+    updateData({ screenplay: updatedScreenplay });
 
-      // Save to backend if projectId exists
-      if (data.projectId) {
-        saveProject({
-          id: data.projectId,
-          createdAt: new Date().toISOString(),
-          ...data,
-          screenplay: updatedScreenplay,
-        });
-      }
+    // Save to backend if projectId exists
+    if (data.projectId) {
+      saveProject({
+        id: data.projectId,
+        createdAt: new Date().toISOString(),
+        ...data,
+        screenplay: updatedScreenplay,
+      });
     }
-  }, [appliedFixes, scenes, data, updateData]);
+  }, [scenes, data, updateData]);
 
 
   const handleOverride = useCallback((checkId: string) => {
