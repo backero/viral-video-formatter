@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
+﻿import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { applyFix, getFixEvidence } from '@/utils/apply-fixes';
 import { useNavigate } from 'react-router';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -16,9 +16,9 @@ import { cn } from '@/lib/utils';
 import { useFormData } from '@/context/FormDataContext';
 import { saveProject } from '@/lib/projectStore';
 
-/* ═══════════════════════════════════════════════════════════════════ */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 /*  TYPES                                                              */
-/* ═══════════════════════════════════════════════════════════════════ */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
 type Severity = 'Critical' | 'Major' | 'Minor' | 'Info';
 type CheckResult = 'PASS' | 'FAIL' | 'N/A';
@@ -53,9 +53,9 @@ interface RevisionItem {
   estimatedEffort: string;
 }
 
-/* ═══════════════════════════════════════════════════════════════════ */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 /*  EDITABLE SCENE DATA                                                */
-/* ═══════════════════════════════════════════════════════════════════ */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
 interface EditableScene {
   sceneNum: number;
@@ -130,9 +130,9 @@ const INITIAL_SCENES: EditableScene[] = [
   },
 ];
 
-/* ═══════════════════════════════════════════════════════════════════ */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 /*  CONSTANTS                                                          */
-/* ═══════════════════════════════════════════════════════════════════ */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
 const VIOLET = '#8B5CF6';
 const SUCCESS = '#22C55E';
@@ -170,11 +170,11 @@ const CATEGORY_ICONS: Record<Category, React.ReactNode> = {
   'Reference': <BarChart3 size={14} />,
 };
 
-/* ═══════════════════════════════════════════════════════════════════ */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 /*  THE 52 CHECKS - VALIDATION DATA                                    */
-/* ═══════════════════════════════════════════════════════════════════ */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
-// Full catalog of 58 checks (id/name/category/severity). Every check starts N/A —
+// Full catalog of 58 checks (id/name/category/severity). Every check starts N/A â€”
 // runRealValidation() overwrites result/evidence/suggestedFix/scenesAffected with the
 // real AI verdict for *your* screenplay. Nothing here is placeholder content.
 const INITIAL_CHECKS: CheckItem[] = [
@@ -275,9 +275,9 @@ const spring = [0.34, 1.56, 0.64, 1] as [number, number, number, number];
 const staggerContainer = { hidden: {}, show: { transition: { staggerChildren: 0.04 } } };
 const fadeUp = { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: easeOut } } };
 
-/* ═══════════════════════════════════════════════════════════════════ */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 /*  UTILITY COMPONENTS                                                 */
-/* ═══════════════════════════════════════════════════════════════════ */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
 function SeverityBadge({ severity }: { severity: Severity }) {
   const colors = SEVERITY_COLORS[severity];
@@ -368,9 +368,9 @@ function NPSArc({ score }: { score: number }) {
   );
 }
 
-/* ═══════════════════════════════════════════════════════════════════ */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 /*  SCENE EDITOR CARD COMPONENT                                        */
-/* ═══════════════════════════════════════════════════════════════════ */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
 function SceneEditorCard({ scene, onChange }: { scene: EditableScene; onChange: (field: keyof EditableScene, value: string | number) => void }) {
   const accent = '#EF4444';
@@ -474,9 +474,9 @@ function SceneEditorCard({ scene, onChange }: { scene: EditableScene; onChange: 
   );
 }
 
-/* ═══════════════════════════════════════════════════════════════════ */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 /*  CHECK CARD                                                         */
-/* ═══════════════════════════════════════════════════════════════════ */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
 function CheckCard({ check, onOverride, onApplyFix, isFixApplied }: { check: CheckItem; onOverride?: (id: string) => void; onApplyFix?: (id: string) => void; isFixApplied?: boolean }) {
   // check.result starts as 'N/A' until the real validation response lands, so the
@@ -569,9 +569,9 @@ function CheckCard({ check, onOverride, onApplyFix, isFixApplied }: { check: Che
                       </div>
                     )}
 
-                    {/* Apply Fix (left) + Override (right) — side by side */}
+                    {/* Apply Fix (left) + Override (right) â€” side by side */}
                     <div className="flex items-center justify-between gap-3">
-                      {/* Apply Fix button — LEFT */}
+                      {/* Apply Fix button â€” LEFT */}
                       {check.result === 'FAIL' && onApplyFix && (
                         <div>
                           {isFixApplied ? (
@@ -591,7 +591,7 @@ function CheckCard({ check, onOverride, onApplyFix, isFixApplied }: { check: Che
                         </div>
                       )}
 
-                      {/* Override button — RIGHT */}
+                      {/* Override button â€” RIGHT */}
                       {check.result === 'FAIL' && onOverride && (
                         <button
                           onClick={() => onOverride(check.id)}
@@ -618,9 +618,9 @@ function CheckCard({ check, onOverride, onApplyFix, isFixApplied }: { check: Che
   );
 }
 
-/* ═══════════════════════════════════════════════════════════════════ */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 /*  ROLE APPROVAL CARD                                                 */
-/* ═══════════════════════════════════════════════════════════════════ */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
 function RoleApprovalCard({
   role,
@@ -776,15 +776,15 @@ function RoleApprovalCard({
 }
 
 
-/* ═══════════════════════════════════════════════════════════════════ */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 /*  MAIN: Phase4                                                       */
-/* ═══════════════════════════════════════════════════════════════════ */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
 export default function Phase4() {
   const navigate = useNavigate();
   const { data, updateData } = useFormData();
 
-  // Memoized on data.screenplay so its identity stays stable across re-renders —
+  // Memoized on data.screenplay so its identity stays stable across re-renders â€”
   // otherwise runRealValidation's identity changes every render, re-triggering the
   // validation effect below and firing a duplicate, non-deterministic API call.
   const realScenes: EditableScene[] | null = useMemo(() => (
@@ -881,11 +881,11 @@ export default function Phase4() {
     return () => clearTimeout(timer);
   }, [data.screenplay, validatedReal, runRealValidation]);
 
-  /* ═══════ EDITABLE SCENE STATE ═══════ */
+  /* â•â•â•â•â•â•â• EDITABLE SCENE STATE â•â•â•â•â•â•â• */
   const [appliedFixes, setAppliedFixes] = useState<string[]>([]);
   const [showSceneEditor, setShowSceneEditor] = useState(false);
 
-  // ═══ SYNC EDITED SCENES BACK TO FORMDATA SCREENPLAY ═══
+  // â•â•â• SYNC EDITED SCENES BACK TO FORMDATA SCREENPLAY â•â•â•
   useEffect(() => {
     // Convert edited scenes back to SceneBeat format for screenplay storage
     const updatedScreenplay = scenes.map(s => ({
@@ -922,7 +922,7 @@ export default function Phase4() {
     setChecks(prev => prev.map(c => c.id === checkId ? { ...c, overridden: !c.overridden } : c));
   }, []);
 
-  /* ═══════ APPLY FIX HANDLER ═══════ */
+  /* â•â•â•â•â•â•â• APPLY FIX HANDLER â•â•â•â•â•â•â• */
   const handleApplyFix = useCallback((checkId: string) => {
     setScenes(prev => {
       const next = [...prev];
@@ -969,7 +969,7 @@ export default function Phase4() {
         case 'NS04':
         case 'SA04': {
           // Do NOT overwrite real dialogue with canned example text.
-          // These checks are about "you/your" density — flag for manual rewrite instead of auto-mutating content.
+          // These checks are about "you/your" density â€” flag for manual rewrite instead of auto-mutating content.
           break;
         }
       }
@@ -992,7 +992,7 @@ export default function Phase4() {
     setAppliedFixes(prev => [...prev, checkId]);
   }, [checks]);
 
-  /* ═══════ RE-VALIDATE HANDLER ═══════ */
+  /* â•â•â•â•â•â•â• RE-VALIDATE HANDLER â•â•â•â•â•â•â• */
   const handleReValidate = useCallback(() => {
     // Helper: count "you/your" per 10 words across all dialogue
     const allDialogue = scenes.map(s => s.dialogue).join(' ');
@@ -1056,7 +1056,7 @@ export default function Phase4() {
   const [hoveredLocked, setHoveredLocked] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
 
-  /* ── Verdict computation ── */
+  /* â”€â”€ Verdict computation â”€â”€ */
   const { verdict, criticalCount, majorCount, minorCount, passCount, failCount, nps, npsInterp, naCount, totalRun } = useMemo(() => {
     const criticalFails = checks.filter(c => c.severity === 'Critical' && c.result === 'FAIL' && !c.overridden).length;
     const majorFails = checks.filter(c => c.severity === 'Major' && c.result === 'FAIL' && !c.overridden).length;
@@ -1084,7 +1084,7 @@ export default function Phase4() {
     return { verdict: v, criticalCount: criticalFails, majorCount: majorFails, minorCount: minorFails, passCount: passed, failCount: failed, nps: npsScore, npsInterp: interp, naCount: na, totalRun };
   }, [checks]);
 
-  /* ── Category counts ── */
+  /* â”€â”€ Category counts â”€â”€ */
   const categoryCounts = useMemo(() => {
     const cats = new Set(checks.map(c => c.category));
     const map = new Map<Category | 'All', number>();
@@ -1098,7 +1098,7 @@ export default function Phase4() {
     return ['All', ...cats.sort()];
   }, [checks]);
 
-  /* ── Filtered checks ── */
+  /* â”€â”€ Filtered checks â”€â”€ */
   const filteredChecks = useMemo(() => {
     let result = checks;
     if (activeCategory !== 'All') {
@@ -1110,7 +1110,7 @@ export default function Phase4() {
     return result;
   }, [checks, activeCategory, activeResultFilter]);
 
-  /* ── Revision queue ── */
+  /* â”€â”€ Revision queue â”€â”€ */
   const revisionQueue = useMemo<RevisionItem[]>(() => {
     const failed = checks.filter(c => c.result === 'FAIL' && !c.overridden);
     const severityOrder: Record<Severity, number> = { Critical: 0, Major: 1, Minor: 2, Info: 3 };
@@ -1126,7 +1126,7 @@ export default function Phase4() {
       }));
   }, [checks]);
 
-  /* ── Role handlers ── */
+  /* â”€â”€ Role handlers â”€â”€ */
   const handleRoleUpdate = useCallback((role: string, data: RoleApproval) => {
     setRoles(prev => ({ ...prev, [role]: data }));
   }, []);
@@ -1135,7 +1135,7 @@ export default function Phase4() {
   const allRolesApproved = approvedRolesCount === 4;
   const exportUnlocked = verdict === 'SHIP' && allRolesApproved;
 
-  /* ── Render helpers ── */
+  /* â”€â”€ Render helpers â”€â”€ */
   const getRoleFailingChecks = (role: string) => {
     const checkIds = ROLE_CHECK_MAP[role] || [];
     return checks
@@ -1206,7 +1206,7 @@ export default function Phase4() {
         )}
         {!data.screenplay && !validating && (
           <div className="mb-6 rounded-xl border border-border-subtle bg-[#151821] p-4 text-sm text-text-secondary">
-            No screenplay found from Phase 3 — showing example validation.
+            No screenplay found from Phase 3 â€” showing example validation.
           </div>
         )}
 
@@ -1612,7 +1612,7 @@ export default function Phase4() {
             Back to Phase 3
           </button>
 
-          {/* Re-Run Validation — visible when editor is open */}
+          {/* Re-Run Validation â€” visible when editor is open */}
           <AnimatePresence>
             {showSceneEditor && (
               <motion.button
@@ -1707,3 +1707,4 @@ export default function Phase4() {
     </Layout>
   );
 }
+
