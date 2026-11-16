@@ -884,6 +884,40 @@ export default function Phase4() {
   const [appliedFixes, setAppliedFixes] = useState<string[]>([]);
   const [showSceneEditor, setShowSceneEditor] = useState(false);
 
+  // ═══ SYNC EDITED SCENES BACK TO FORMDATA SCREENPLAY ═══
+  useEffect(() => {
+    if (appliedFixes.length > 0) {
+      // Convert edited scenes back to SceneBeat format for screenplay storage
+      const updatedScreenplay = scenes.map(s => ({
+        sceneNum: s.sceneNum,
+        name: s.name,
+        timingStart: s.timingStart,
+        timingEnd: s.timingEnd,
+        duration: s.duration,
+        dialogue: s.dialogue,
+        action: s.action,
+        camera: { shot: s.cameraShot, angle: s.cameraAngle, movement: s.cameraMovement },
+        actor: { expression: s.actorExpression, energy: s.actorEnergy, pace: s.actorPace },
+        visual: s.visual,
+        audio: s.audio,
+        editMarkers: typeof s.editMarkers === 'string' ? JSON.parse(s.editMarkers) : s.editMarkers,
+      }));
+
+      // Update FormDataContext screenplay
+      updateData({ screenplay: updatedScreenplay });
+
+      // Save to backend if projectId exists
+      if (data.projectId) {
+        saveProject({
+          id: data.projectId,
+          createdAt: new Date().toISOString(),
+          ...data,
+          screenplay: updatedScreenplay,
+        });
+      }
+    }
+  }, [appliedFixes, scenes, data, updateData]);
+
 
   const handleOverride = useCallback((checkId: string) => {
     setChecks(prev => prev.map(c => c.id === checkId ? { ...c, overridden: !c.overridden } : c));
@@ -957,7 +991,7 @@ export default function Phase4() {
       return { ...c, result: (checkId === 'NS04' || checkId === 'SA04') ? c.result : 'PASS', evidence: fixEvidence[checkId] || `Marked fixed: ${c.name} correction applied.`, suggestedFix: (checkId === 'NS04' || checkId === 'SA04') ? c.suggestedFix : undefined, overridden: (checkId === 'NS04' || checkId === 'SA04') ? true : c.overridden };
     }));
     setAppliedFixes(prev => [...prev, checkId]);
-  }, []);
+  }, [checks]);
 
   /* ═══════ RE-VALIDATE HANDLER ═══════ */
   const handleReValidate = useCallback(() => {
