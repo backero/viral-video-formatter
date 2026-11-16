@@ -1,4 +1,5 @@
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
+import { CHECK_FIXES } from '@/utils/apply-fixes';
 import { useNavigate } from 'react-router';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
