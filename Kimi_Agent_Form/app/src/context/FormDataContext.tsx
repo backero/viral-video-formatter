@@ -23,6 +23,13 @@ export interface SceneBeat {
   editMarkers: { time: string; event: string }[];
 }
 
+export interface ScreenplayFix {
+  checkId: string;
+  field: string;
+  before: string;
+  after: string;
+}
+
 export interface FormData {
   // Video Identity
   date: string;
@@ -58,6 +65,8 @@ export interface FormData {
   copyDescription: string;
   // AI-generated screenplay (Phase 3 output, consumed by Phase 4/5)
   screenplay: SceneBeat[] | null;
+  // Final applied Phase 4 fixes, displayed with the screenplay in Phase 5.
+  screenplayFixes: Record<number, ScreenplayFix[]>;
   // Which saved project this session corresponds to (null until first save)
   projectId: string | null;
   // Phase 2 — Structure (content type, format/structure combo, CTA, hook edits)
@@ -109,6 +118,7 @@ const defaultData: FormData = {
   copyElement: '',
   copyDescription: '',
   screenplay: null,
+  screenplayFixes: {},
   projectId: null,
   phase2ContentType: '',
   phase2Platform: '',

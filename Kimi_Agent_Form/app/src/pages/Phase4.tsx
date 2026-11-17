@@ -846,8 +846,8 @@ export default function Phase4() {
   updateDataRef.current = updateData;
   useEffect(() => {
     if (baselineScenes.current === scenes) return;
-    updateDataRef.current({ screenplay: toScreenplay(scenes) });
-  }, [scenes]);
+    updateDataRef.current({ screenplay: toScreenplay(scenes), screenplayFixes: appliedChanges });
+  }, [scenes, appliedChanges]);
   useEffect(() => {
     if (focusedChangeScene === null) return;
     const frame = requestAnimationFrame(() => {
@@ -1684,8 +1684,8 @@ export default function Phase4() {
               onClick={() => {
                 if (exportUnlocked) {
                   const screenplay = toScreenplay(scenes);
-                  updateData({ screenplay });
-                  if (data.projectId) saveProject({ ...data, screenplay }, 5, data.projectId);
+                  updateData({ screenplay, screenplayFixes: appliedChanges });
+                  if (data.projectId) saveProject({ ...data, screenplay, screenplayFixes: appliedChanges }, 5, data.projectId);
                   navigate('/phase/5');
                 }
               }}

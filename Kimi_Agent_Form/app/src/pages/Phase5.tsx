@@ -326,6 +326,7 @@ export default function Phase5({ isShared = false }: Phase5Props) {
         editMarkers: JSON.stringify(s.editMarkers || []),
       }))
     : SCREENPLAY_SCENES;
+  const finalFixes = data.screenplayFixes || {};
 
   const activeMeta = data.screenplay
     ? {
@@ -632,6 +633,7 @@ export default function Phase5({ isShared = false }: Phase5Props) {
       ...activeScenes.flatMap(s => [
         `[Scene ${s.sceneNum}: ${s.name}]`,
         `ACTOR: ${s.dialogue}`,
+        ...(finalFixes[s.sceneNum] || []).map(fix => `APPLIED FIX (${fix.checkId}, ${fix.field}): ${fix.after}`),
         `${s.action}`,
         '',
       ]),
@@ -639,7 +641,7 @@ export default function Phase5({ isShared = false }: Phase5Props) {
       `${activeMeta.words} words | ${activeMeta.scenes} scenes | ${activeMeta.runtime}`,
     ];
     return lines.join('\n');
-  }, []);
+  }, [activeMeta, activeScenes, finalFixes]);
 
   /* ---- Golden Rules Text ---- */
   const goldenRulesText = useMemo(() => {
@@ -1031,6 +1033,18 @@ export default function Phase5({ isShared = false }: Phase5Props) {
               </div>
               <p className="text-text-primary font-semibold mb-1">ACTOR</p>
               <p className="text-text-primary mb-1">{s.dialogue}</p>
+              {(finalFixes[s.sceneNum] || []).length > 0 && (
+                <div className="mb-2 border-l-2 border-success/60 bg-success/5 px-3 py-2 text-xs">
+                  <p className="font-bold uppercase tracking-wide text-success mb-1">Final applied fixes</p>
+                  <div className="space-y-1.5">
+                    {finalFixes[s.sceneNum].map((fix, index) => (
+                      <p key={`${fix.checkId}-${fix.field}-${index}`} className="text-text-secondary">
+                        <span className="font-semibold text-text-primary">{fix.checkId} · {fix.field}:</span> {fix.after}
+                      </p>
+                    ))}
+                  </div>
+                </div>
+              )}
               <p className="text-text-tertiary italic text-xs">{s.action}</p>
             </div>
           ))}
