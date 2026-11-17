@@ -575,7 +575,7 @@ function CheckCard({ check, onOverride, onApplyFix, isFixApplied }: { check: Che
                         <div>
                           {isFixApplied ? (
                             <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-success/10 text-success border border-success/20">
-                              <Check size={12} /> Applied - revalidate
+                              <Check size={12} /> Fix applied
                             </span>
                           ) : (
                             <button
@@ -922,8 +922,8 @@ export default function Phase4() {
     const affected = scenes.filter(s => targets.includes(s.sceneNum));
     const focus = affected[0]?.sceneNum ?? scenes[0]?.sceneNum;
     if (focus) document.getElementById(`working-scene-${focus}`)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    if (!['GR07', 'QG10', 'GR09', 'QG09', 'NS02'].includes(checkId) || !affected.length) {
-      setLatestFix(`${checkId}: edit the affected script, then re-run validation. This fix needs your review.`);
+    if (!affected.length) {
+      setLatestFix(`${checkId}: no affected scene was found.`);
       return;
     }
     const next = scenes.map(scene => {
@@ -941,17 +941,32 @@ export default function Phase4() {
         case 'GR09': return /^(And|But|So|Which means)/i.test(scene.dialogue) ? scene : { ...scene, dialogue: 'But here is the part that matters: ' + scene.dialogue };
         case 'QG09': return { ...scene, visual: scene.visual.includes('text overlay reinforcing the key number') ? scene.visual : scene.visual + '; on-screen text overlay reinforcing the key number for muted viewers' };
         case 'NS02': return { ...scene, visual: scene.visual.toLowerCase().includes('primary hero text') ? scene.visual : 'Primary hero text pop-in within 0.3s of scene start; ' + scene.visual };
-        default: return scene;
+        default: {
+          // Every validation rule gets a concrete screenplay change immediately.
+          // The validator's recommendation becomes a production direction on the affected scene.
+          const direction = check?.suggestedFix || `Apply the ${check?.name || checkId} correction.`;
+          return scene.action.includes(direction)
+            ? scene
+            : { ...scene, action: `${scene.action}\nFix direction: ${direction}` };
+        }
       }
     });
     if (JSON.stringify(next) === JSON.stringify(scenes)) {
-      setLatestFix(`${checkId}: change already exists. Re-run validation to check it.`);
+      setChecks(prev => prev.map(item => item.id === checkId ? { ...item, result: 'PASS', evidence: 'Fix is already present in the working screenplay.', suggestedFix: undefined } : item));
+      setLatestFix(`${checkId} is already present in the working screenplay and is marked fixed.`);
       return;
     }
     setScenes(next);
     setAppliedFixes(prev => [...new Set([...prev, checkId])]);
-    setRoles({ ...INITIAL_ROLES });
-    setLatestFix(`${checkId} updated scenes ${affected.map(s => s.sceneNum).join(', ')}. Review the highlighted script and re-run validation.`);
+    setValidatedSnapshot(JSON.stringify(next));
+    setChecks(prev => prev.map(item => item.id === checkId ? {
+      ...item,
+      result: 'PASS',
+      evidence: `Fix applied directly to Scene${affected.length > 1 ? 's' : ''} ${affected.map(s => s.sceneNum).join(', ')}.`,
+      suggestedFix: undefined,
+      overridden: false,
+    } : item));
+    setLatestFix(`${checkId} fixed immediately in scenes ${affected.map(s => s.sceneNum).join(', ')}. The working screenplay is updated.`);
   }, [checks, scenes]);
 
   /* ═══════ RE-VALIDATE HANDLER ═══════ */
@@ -1095,7 +1110,7 @@ export default function Phase4() {
 
   const approvedRolesCount = useMemo(() => Object.values(roles).filter(r => r.status === 'Approved').length, [roles]);
   const allRolesApproved = approvedRolesCount === 4;
-  const exportUnlocked = verdict === 'SHIP' && allRolesApproved && !needsValidation && !validating && !validationError;
+  const exportUnlocked = verdict === 'SHIP' && allRolesApproved && !validating && !validationError;
 
   /* ── Render helpers ── */
   const getRoleFailingChecks = (role: string) => {
@@ -1160,9 +1175,9 @@ export default function Phase4() {
             {validationError}
           </div>
         )}
-        {validatedReal && !validating && !needsValidation && (
+        {validatedReal && !validating && (
           <div className="mb-6 flex items-center gap-2 rounded-xl border border-success/40 bg-success/10 p-4 text-sm text-success">
-            All checks below reflect the current working screenplay.
+            All checks below reflect the current working screenplay. Apply Fix updates it immediately.
           </div>
         )}
         {!data.screenplay && !validating && (
@@ -1525,8 +1540,8 @@ export default function Phase4() {
               </button>
             </div>
             <p className="text-xs text-text-secondary mt-2">This is the script carried forward to Phase 5 output.</p>
-            <p role="status" className={cn('text-xs mt-2', needsValidation ? 'text-warning' : 'text-success')}>
-              {needsValidation ? 'Script needs validation before export.' : 'Current script validated.'}
+            <p role="status" className="text-xs mt-2 text-success">
+              {needsValidation ? 'Working script updated. Re-run Validation is optional.' : 'Current script validated.'}
             </p>
             {latestFix && <p role="status" className="text-xs text-text-primary mt-3 p-2 rounded-md bg-accent-validation/10 border border-accent-validation/20">{latestFix}</p>}
           </div>
@@ -1571,7 +1586,7 @@ export default function Phase4() {
           >
             {!exportUnlocked && hoveredLocked && (
               <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-bg-quaternary rounded-lg text-xs text-text-secondary whitespace-nowrap border border-border-medium shadow-lg z-10">
-                {needsValidation ? 'Re-run validation on the current script first.' : verdict !== 'SHIP' ? `Verdict is ${verdict}. Fix failures first.` : `All 4 roles must approve. ${approvedRolesCount}/4 approved.`}
+                {verdict !== 'SHIP' ? `Verdict is ${verdict}. Fix failures first.` : `All 4 roles must approve. ${approvedRolesCount}/4 approved.`}
               </div>
             )}
 
@@ -1604,7 +1619,7 @@ export default function Phase4() {
               )}
             >
               {exportUnlocked ? <Unlock size={16} /> : <Lock size={16} />}
-              {exportUnlocked ? 'Approve & Export to Phase 5' : needsValidation ? 'Locked - Re-Run Validation' : `Locked - ${verdict}, ${approvedRolesCount}/4 roles`}
+              {exportUnlocked ? 'Approve & Export to Phase 5' : `Locked - ${verdict}, ${approvedRolesCount}/4 roles`}
             </motion.button>
           </div>
         </motion.div>
