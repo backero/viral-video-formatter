@@ -19,6 +19,7 @@ import {
   Loader2,
   Paperclip,
   ChevronRight,
+  Lock,
 } from 'lucide-react';
 import { Layout } from '@/components/Layout';
 import { Card } from '@/components/Card';
@@ -36,6 +37,7 @@ import {
 import { cn } from '@/lib/utils';
 import { useFormData } from '@/context/FormDataContext';
 import { saveProject } from '@/lib/projectStore';
+import { validatePhase1 } from '@/utils/phaseValidation';
 
 // Use Vercel serverless functions via /api endpoint
 const API_BASE = import.meta.env.VITE_API_URL || '/api';
@@ -1401,13 +1403,40 @@ export default function Phase1() {
         </motion.div>
 
         {/* ═══════════════ Footer Navigation ═══════════════ */}
-        <div className="flex items-center justify-end pt-8 border-t border-border-subtle">
+        <div className="flex flex-col items-end gap-2 pt-8 border-t border-border-subtle">
+          {!isFormValid && (
+            <div className="text-xs text-warning flex items-center gap-1.5 mb-2">
+              <Lock size={14} />
+              <span>Complete all required fields to unlock Phase 2</span>
+            </div>
+          )}
           <button
-            onClick={() => navigate('/phase/2')}
-            className="flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-medium text-text-inverse transition-opacity hover:opacity-90"
-            style={{ backgroundColor: ACCENT }}
+            onClick={() => {
+              const validation = validatePhase1(data);
+              if (validation.isComplete) {
+                navigate('/phase/2');
+              }
+            }}
+            disabled={!isFormValid}
+            className={cn(
+              'flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-medium transition-all',
+              isFormValid
+                ? 'text-text-inverse cursor-pointer hover:opacity-90'
+                : 'text-text-tertiary cursor-not-allowed opacity-50'
+            )}
+            style={isFormValid ? { backgroundColor: ACCENT } : { backgroundColor: '#3A4050' }}
+            title={isFormValid ? 'All fields complete - Proceed to Phase 2' : `Missing: ${missingFields.join(', ')}`}
           >
-            Next Phase <ChevronRight className="w-4 h-4" />
+            {isFormValid ? (
+              <>
+                Next Phase <ChevronRight className="w-4 h-4" />
+              </>
+            ) : (
+              <>
+                <Lock size={16} />
+                Locked
+              </>
+            )}
           </button>
         </div>
       </motion.div>

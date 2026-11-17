@@ -520,17 +520,29 @@ export default function Phase3() {
             <ChevronRight className="w-4 h-4 rotate-180" />
             Back to Phase 2
           </button>
-          <button
-            onClick={() => {
-              if (data.projectId) saveProject({ ...data, screenplay: generatedScenes }, 4, data.projectId);
-              navigate('/phase/4');
-            }}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium text-text-inverse transition-opacity hover:opacity-90"
-            style={{ backgroundColor: pageAccent }}
-          >
-            Continue to Phase 4
-            <ChevronRight className="w-4 h-4" />
-          </button>
+          <div className="flex flex-col items-end gap-2">
+            {(!scenes || scenes.length < 5) && (
+              <div className="text-xs text-warning flex items-center gap-1.5">
+                <AlertCircle size={14} />
+                <span>Screenplay must have 5 complete scenes to proceed</span>
+              </div>
+            )}
+            <button
+              disabled={!scenes || scenes.length < 5}
+              onClick={() => {
+                if (data.projectId) saveProject({ ...data, screenplay: scenes }, 4, data.projectId);
+                navigate('/phase/4');
+              }}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium text-text-inverse transition-opacity ${
+                scenes && scenes.length >= 5 ? 'hover:opacity-90' : 'opacity-40 cursor-not-allowed'
+              }`}
+              style={{ backgroundColor: pageAccent }}
+              title={scenes && scenes.length >= 5 ? 'All scenes generated - Proceed to Phase 4' : 'Screenplay generation required'}
+            >
+              Continue to Phase 4
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
         </div>
 
       </div>

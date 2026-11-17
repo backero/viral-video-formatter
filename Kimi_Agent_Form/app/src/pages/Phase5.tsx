@@ -1363,9 +1363,17 @@ export default function Phase5({ isShared = false }: Phase5Props) {
                   Regenerate Screenplay
                 </button>
                 <button
-                  onClick={() => navigate('/phase/6')}
-                  className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold text-white transition-all hover:opacity-90"
-                  style={{ backgroundColor: '#F59E0B' }}
+                  onClick={() => {
+                    if (data.screenplay && data.screenplay.length >= 5) {
+                      navigate('/phase/6');
+                    }
+                  }}
+                  disabled={!data.screenplay || data.screenplay.length < 5}
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold text-white transition-all ${
+                    data.screenplay && data.screenplay.length >= 5 ? 'hover:opacity-90' : 'opacity-40 cursor-not-allowed'
+                  }`}
+                  style={{ backgroundColor: data.screenplay && data.screenplay.length >= 5 ? '#F59E0B' : '#6B7280' }}
+                  title={data.screenplay && data.screenplay.length >= 5 ? 'Open in Node Editor' : 'Complete Phase 4 to unlock Phase 6'}
                 >
                   <Zap size={14} />
                   Open in Node Editor

@@ -909,11 +909,9 @@ export default function Phase4() {
     // Save to backend if projectId exists
     if (data.projectId) {
       saveProject({
-        id: data.projectId,
-        createdAt: new Date().toISOString(),
         ...data,
         screenplay: updatedScreenplay,
-      });
+      }, 4, data.projectId);
     }
   }, [scenes, data, updateData]);
 
@@ -949,7 +947,7 @@ export default function Phase4() {
     setScenes(prev => {
       const checkData = checks.find(c => c.id === checkId);
       if (!checkData) return prev;
-      return applyFix(prev, checkId, checkData.suggestedFix, checkData.scenesAffected);
+      return applyFix(prev, checkId, checkData.suggestedFix || '', checkData.scenesAffected);
     });
     setChecks(prev => prev.map(c => {
       if (c.id !== checkId) return c;
