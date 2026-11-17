@@ -8,7 +8,8 @@ export function applyFix(
   scenesAffected?: number[]
 ): any[] {
   const next = [...scenes];
-  const affectedScenes = scenesAffected || [0, 1, 2, 3, 4]; // Default: all scenes
+  // Use provided scene indices (0-based), or default to all scenes
+  const affectedScenes = scenesAffected && scenesAffected.length > 0 ? scenesAffected : [0, 1, 2, 3, 4];
 
   switch (checkId) {
     // DIALOGUE-BASED FIXES: Replace problematic dialogue with suggested fix
@@ -35,11 +36,8 @@ export function applyFix(
     case 'CT03': // Single CTA Only
     {
       affectedScenes.forEach(i => {
-        if (i < next.length && next[i].dialogue) {
-          // Replace dialogue with suggested fix if it's shorter and clearer
-          if (suggestedFix && suggestedFix.length < next[i].dialogue.length * 1.5) {
-            next[i] = { ...next[i], dialogue: suggestedFix };
-          }
+        if (i < next.length && next[i].dialogue && suggestedFix) {
+          next[i] = { ...next[i], dialogue: suggestedFix };
         }
       });
       break;

@@ -919,6 +919,8 @@ export default function Phase4() {
 
   // Sync screenplay to FormDataContext whenever Apply Fix modifies scenes
   useEffect(() => {
+    if (appliedFixes.length === 0) return; // Only sync when fixes applied
+
     // Convert scenes to SceneBeat format for FormDataContext
     const updatedScreenplay = scenes.map(s => ({
       sceneNum: s.sceneNum,
@@ -935,11 +937,10 @@ export default function Phase4() {
       editMarkers: typeof s.editMarkers === 'string' ? JSON.parse(s.editMarkers) : s.editMarkers,
     }));
 
-    // Only sync if fixes were applied (scenes changed from Apply Fix)
-    if (appliedFixes.length > 0) {
-      updateData({ ...data, screenplay: updatedScreenplay });
-    }
-  }, [scenes, appliedFixes, data, updateData]);
+    // Sync to FormDataContext - get latest data from context hook
+    const currentData = data;
+    updateData({ ...currentData, screenplay: updatedScreenplay });
+  }, [scenes, appliedFixes]);
 
 
   const handleOverride = useCallback((checkId: string) => {
