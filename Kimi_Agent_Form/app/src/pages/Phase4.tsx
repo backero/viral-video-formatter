@@ -828,6 +828,7 @@ export default function Phase4() {
   const baselineScenes = useRef(scenes);
   const [appliedChanges, setAppliedChanges] = useState<Record<number, AppliedChange[]>>({});
   const [openChangeScenes, setOpenChangeScenes] = useState<Record<number, boolean>>({});
+  const [focusedChangeScene, setFocusedChangeScene] = useState<number | null>(null);
   const [validatedSnapshot, setValidatedSnapshot] = useState<string | null>(null);
   const [latestFix, setLatestFix] = useState<string | null>(null);
   const needsValidation = validatedSnapshot !== JSON.stringify(scenes);
@@ -847,6 +848,13 @@ export default function Phase4() {
     if (baselineScenes.current === scenes) return;
     updateDataRef.current({ screenplay: toScreenplay(scenes) });
   }, [scenes]);
+  useEffect(() => {
+    if (focusedChangeScene === null) return;
+    const frame = requestAnimationFrame(() => {
+      document.getElementById(`change-summary-${focusedChangeScene}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [focusedChangeScene, appliedChanges]);
   const [checks, setChecks] = useState<CheckItem[]>(INITIAL_CHECKS);
   const [validating, setValidating] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
@@ -937,8 +945,6 @@ export default function Phase4() {
     const check = checks.find(c => c.id === checkId);
     const targets = check?.scenesAffected?.length ? check.scenesAffected : [checkId === 'GR09' ? 2 : 4];
     const affected = scenes.filter(s => targets.includes(s.sceneNum));
-    const focus = affected[0]?.sceneNum ?? scenes[0]?.sceneNum;
-    if (focus) document.getElementById(`working-scene-${focus}`)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     if (!affected.length) {
       setLatestFix(`${checkId}: no affected scene was found.`);
       return;
@@ -996,6 +1002,7 @@ export default function Phase4() {
       return updated;
     });
     setOpenChangeScenes(previous => ({ ...previous, ...Object.fromEntries(Object.keys(changesByScene).map(sceneNum => [Number(sceneNum), true])) }));
+    setFocusedChangeScene(affected[0].sceneNum);
     setAppliedFixes(prev => [...new Set([...prev, checkId])]);
     setValidatedSnapshot(JSON.stringify(next));
     setChecks(prev => prev.map(item => item.id === checkId ? {
@@ -1593,7 +1600,7 @@ export default function Phase4() {
               return (
                 <div key={scene.sceneNum} id={`working-scene-${scene.sceneNum}`} className={cn('scroll-mt-48 rounded-xl', changedFields.length > 0 && 'ring-1 ring-success/50')}>
                   {sceneChanges.length > 0 && (
-                    <section className="border border-success/30 bg-success/5 rounded-t-xl overflow-hidden" aria-label={`Applied changes for Scene ${scene.sceneNum}`}>
+                    <section id={`change-summary-${scene.sceneNum}`} className="border border-success/30 bg-success/5 rounded-t-xl overflow-hidden scroll-mt-24" aria-label={`Applied changes for Scene ${scene.sceneNum}`}>
                       <div className="flex items-center justify-between gap-3 px-3 py-2 border-b border-success/20">
                         <p className="flex items-center gap-1.5 text-xs font-bold text-success uppercase tracking-wide">
                           <CheckCircle2 size={13} /> Applied changes ({sceneChanges.length})
