@@ -394,7 +394,7 @@ function SceneEditorCard({ scene, onChange }: { scene: EditableScene; onChange: 
       </div>
 
       {/* Two-column grid for fields */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 2xl:grid-cols-2 gap-4">
         {/* Left column */}
         <div className="space-y-3">
           {/* Dialogue */}
@@ -575,7 +575,7 @@ function CheckCard({ check, onOverride, onApplyFix, isFixApplied }: { check: Che
                         <div>
                           {isFixApplied ? (
                             <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-success/10 text-success border border-success/20">
-                              <Check size={12} /> Applied
+                              <Check size={12} /> Applied - revalidate
                             </span>
                           ) : (
                             <button
@@ -781,7 +781,7 @@ function RoleApprovalCard({
 
 export default function Phase4() {
   const navigate = useNavigate();
-  const { data } = useFormData();
+  const { data, updateData } = useFormData();
 
   // Memoized on data.screenplay so its identity stays stable across re-renders —
   // otherwise runRealValidation's identity changes every render, re-triggering the
@@ -810,14 +810,34 @@ export default function Phase4() {
   ), [data.screenplay]);
 
   const [scenes, setScenes] = useState<EditableScene[]>(realScenes ?? INITIAL_SCENES);
+  const baselineScenes = useRef(scenes);
+  const [validatedSnapshot, setValidatedSnapshot] = useState<string | null>(null);
+  const [latestFix, setLatestFix] = useState<string | null>(null);
+  const needsValidation = validatedSnapshot !== JSON.stringify(scenes);
+  const workingSnapshotRef = useRef(JSON.stringify(scenes));
+  workingSnapshotRef.current = JSON.stringify(scenes);
+  const toScreenplay = (working: EditableScene[]) => working.map(s => ({
+    sceneNum: s.sceneNum, name: s.name, timingStart: s.timingStart, timingEnd: s.timingEnd, duration: s.duration,
+    dialogue: s.dialogue, action: s.action,
+    camera: { shot: s.cameraShot, angle: s.cameraAngle, movement: s.cameraMovement },
+    actor: { expression: s.actorExpression, energy: s.actorEnergy, pace: s.actorPace },
+    visual: s.visual, audio: s.audio,
+    editMarkers: (() => { try { return JSON.parse(s.editMarkers); } catch { return []; } })(),
+  }));
+  const updateDataRef = useRef(updateData);
+  updateDataRef.current = updateData;
+  useEffect(() => {
+    if (baselineScenes.current === scenes) return;
+    updateDataRef.current({ screenplay: toScreenplay(scenes) });
+  }, [scenes]);
   const [checks, setChecks] = useState<CheckItem[]>(INITIAL_CHECKS);
   const [validating, setValidating] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
   const [validatedReal, setValidatedReal] = useState(false);
 
   const runRealValidation = useCallback(() => {
-    // Use real screenplay from context if available, otherwise use current editor state
-    const scenesToValidate = realScenes && realScenes.length > 0 ? realScenes : scenes;
+    // Always validate the visible working script, including applied fixes.
+    const scenesToValidate = scenes;
     if (!scenesToValidate || scenesToValidate.length === 0) return;
 
     const API_BASE = import.meta.env.VITE_API_URL || '/api';
@@ -845,6 +865,7 @@ export default function Phase4() {
         return res.json();
       })
       .then((json) => {
+        if (workingSnapshotRef.current !== JSON.stringify(scenesToValidate)) return;
         const resultsById: Record<string, { result: CheckResult; evidence: string; suggestedFix: string; scenesAffected?: number[] }> =
           Object.fromEntries(json.results.map((r: any) => [r.id, r]));
         setChecks((prev) =>
@@ -861,6 +882,8 @@ export default function Phase4() {
           )
         );
         setValidatedReal(true);
+        setValidatedSnapshot(JSON.stringify(scenesToValidate));
+        setAppliedFixes([]);
       })
       .catch((err) => {
         console.error('validate-screenplay failed:', err);
@@ -871,18 +894,21 @@ export default function Phase4() {
         );
       })
       .finally(() => setValidating(false));
-  }, [realScenes, scenes]);
+  }, [scenes]);
 
+  const initialValidationStarted = useRef(false);
   useEffect(() => {
-    if (validatedReal) return;
-    // Re-run validation whenever screenplay data changes
-    const timer = setTimeout(() => runRealValidation(), 300);
+    if (initialValidationStarted.current) return;
+    // Validate once on entry; edits require an explicit re-run.
+    const timer = setTimeout(() => {
+      initialValidationStarted.current = true;
+      runRealValidation();
+    }, 300);
     return () => clearTimeout(timer);
-  }, [data.screenplay, validatedReal, runRealValidation]);
+  }, [runRealValidation]);
 
   /* ═══════ EDITABLE SCENE STATE ═══════ */
   const [appliedFixes, setAppliedFixes] = useState<string[]>([]);
-  const [showSceneEditor, setShowSceneEditor] = useState(false);
 
 
   const handleOverride = useCallback((checkId: string) => {
@@ -891,73 +917,42 @@ export default function Phase4() {
 
   /* ═══════ APPLY FIX HANDLER ═══════ */
   const handleApplyFix = useCallback((checkId: string) => {
-    setScenes(prev => {
-      const next = [...prev];
+    const check = checks.find(c => c.id === checkId);
+    const targets = check?.scenesAffected?.length ? check.scenesAffected : [checkId === 'GR09' ? 2 : 4];
+    const affected = scenes.filter(s => targets.includes(s.sceneNum));
+    const focus = affected[0]?.sceneNum ?? scenes[0]?.sceneNum;
+    if (focus) document.getElementById(`working-scene-${focus}`)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    if (!['GR07', 'QG10', 'GR09', 'QG09', 'NS02'].includes(checkId) || !affected.length) {
+      setLatestFix(`${checkId}: edit the affected script, then re-run validation. This fix needs your review.`);
+      return;
+    }
+    const next = scenes.map(scene => {
+      if (!targets.includes(scene.sceneNum)) return scene;
       switch (checkId) {
         case 'GR07':
         case 'QG10': {
-          const s4 = { ...next[3] };
-          if (!s4.visual.includes('B-roll insert at 20.0s')) {
-            s4.visual = s4.visual + '; B-roll insert added mid-scene to break up the static shot';
-          }
-          try {
-            const markers = JSON.parse(s4.editMarkers);
-            markers.splice(Math.min(2, markers.length), 0, { time: 'mid-scene', event: 'B-roll cutaway - breaks static shot' });
-            s4.editMarkers = JSON.stringify(markers, null, 0);
-          } catch {}
-          next[3] = s4;
-          break;
+          let markers;
+          try { markers = JSON.parse(scene.editMarkers); } catch { markers = []; }
+          if (!Array.isArray(markers)) markers = [];
+          const addition = 'B-roll cutaway - breaks static shot';
+          if (!markers.some((m: { event?: string }) => m.event === addition)) markers.push({ time: `${(scene.timingStart + scene.duration / 2).toFixed(1)}s`, event: addition });
+          return { ...scene, visual: scene.visual.includes(addition) ? scene.visual : scene.visual + '; ' + addition, editMarkers: JSON.stringify(markers) };
         }
-        case 'GR09': {
-          // Add a generic bridge marker without overwriting the actual dialogue content
-          const s2 = { ...next[1] };
-          if (!s2.dialogue.match(/^(And|But|So|Which means)/i)) {
-            s2.dialogue = 'But here\u2019s the part that matters: ' + s2.dialogue;
-          }
-          next[1] = s2;
-          break;
-        }
-        case 'QG09': {
-          const s4 = { ...next[3] };
-          if (!s4.visual.includes('text overlay reinforcing the key number')) {
-            s4.visual = s4.visual + '; on-screen text overlay reinforcing the key number for muted viewers';
-          }
-          next[3] = s4;
-          break;
-        }
-        case 'NS02': {
-          const s4 = { ...next[3] };
-          if (!s4.visual.includes('primary hero text')) {
-            s4.visual = 'Primary hero text pop-in within 0.3s of scene start; ' + s4.visual;
-          }
-          next[3] = s4;
-          break;
-        }
-        case 'NS04':
-        case 'SA04': {
-          // Do NOT overwrite real dialogue with canned example text.
-          // These checks are about "you/your" density — flag for manual rewrite instead of auto-mutating content.
-          break;
-        }
+        case 'GR09': return /^(And|But|So|Which means)/i.test(scene.dialogue) ? scene : { ...scene, dialogue: 'But here is the part that matters: ' + scene.dialogue };
+        case 'QG09': return { ...scene, visual: scene.visual.includes('text overlay reinforcing the key number') ? scene.visual : scene.visual + '; on-screen text overlay reinforcing the key number for muted viewers' };
+        case 'NS02': return { ...scene, visual: scene.visual.toLowerCase().includes('primary hero text') ? scene.visual : 'Primary hero text pop-in within 0.3s of scene start; ' + scene.visual };
+        default: return scene;
       }
-      return next;
     });
-    // Immediately mark the check as PASS with updated evidence
-    setChecks(prev => prev.map(c => {
-      if (c.id !== checkId) return c;
-      const fixEvidence: Record<string, string> = {
-        GR07: 'Marked fixed: B-roll insert added to Scene 4 to break up the static shot.',
-        QG10: 'Marked fixed: visual change added to Scene 4 so no segment exceeds 2s.',
-        GR09: 'Marked fixed: bridge phrase added to Scene 2 opening.',
-        QG09: 'Marked fixed: on-screen text overlay added to Scene 4 for muted viewers.',
-        NS02: 'Marked fixed: primary hero text added to Scene 4 for tri-modal convergence.',
-        NS04: 'Acknowledged \u2014 this needs a manual dialogue rewrite to raise "you/your" density; not auto-applied to avoid overwriting your real script.',
-        SA04: 'Acknowledged \u2014 this needs a manual dialogue rewrite to raise "you/your" density; not auto-applied to avoid overwriting your real script.',
-      };
-      return { ...c, result: (checkId === 'NS04' || checkId === 'SA04') ? c.result : 'PASS', evidence: fixEvidence[checkId] || `Marked fixed: ${c.name} correction applied.`, suggestedFix: (checkId === 'NS04' || checkId === 'SA04') ? c.suggestedFix : undefined, overridden: (checkId === 'NS04' || checkId === 'SA04') ? true : c.overridden };
-    }));
-    setAppliedFixes(prev => [...prev, checkId]);
-  }, []);
+    if (JSON.stringify(next) === JSON.stringify(scenes)) {
+      setLatestFix(`${checkId}: change already exists. Re-run validation to check it.`);
+      return;
+    }
+    setScenes(next);
+    setAppliedFixes(prev => [...new Set([...prev, checkId])]);
+    setRoles({ ...INITIAL_ROLES });
+    setLatestFix(`${checkId} updated scenes ${affected.map(s => s.sceneNum).join(', ')}. Review the highlighted script and re-run validation.`);
+  }, [checks, scenes]);
 
   /* ═══════ RE-VALIDATE HANDLER ═══════ */
   const handleReValidate = useCallback(() => {
@@ -1021,7 +1016,7 @@ export default function Phase4() {
   const [activeCategory, setActiveCategory] = useState<Category | 'All'>('All');
   const [activeResultFilter, setActiveResultFilter] = useState<'All' | 'PASS' | 'FAIL' | 'N/A'>('All');
   const [hoveredLocked, setHoveredLocked] = useState(false);
-  const [toast, setToast] = useState<string | null>(null);
+  const [toast] = useState<string | null>(null);
 
   /* ── Verdict computation ── */
   const { verdict, criticalCount, majorCount, minorCount, passCount, failCount, nps, npsInterp, naCount, totalRun } = useMemo(() => {
@@ -1100,7 +1095,7 @@ export default function Phase4() {
 
   const approvedRolesCount = useMemo(() => Object.values(roles).filter(r => r.status === 'Approved').length, [roles]);
   const allRolesApproved = approvedRolesCount === 4;
-  const exportUnlocked = verdict === 'SHIP' && allRolesApproved;
+  const exportUnlocked = verdict === 'SHIP' && allRolesApproved && !needsValidation && !validating && !validationError;
 
   /* ── Render helpers ── */
   const getRoleFailingChecks = (role: string) => {
@@ -1151,7 +1146,7 @@ export default function Phase4() {
   };
 
   return (
-    <Layout>
+    <Layout className="[&>div]:max-w-none">
       <div className="py-10 pb-16">
 
         {validating && (
@@ -1165,9 +1160,9 @@ export default function Phase4() {
             {validationError}
           </div>
         )}
-        {validatedReal && !validating && (
+        {validatedReal && !validating && !needsValidation && (
           <div className="mb-6 flex items-center gap-2 rounded-xl border border-success/40 bg-success/10 p-4 text-sm text-success">
-            All checks below reflect your actual AI-generated screenplay.
+            All checks below reflect the current working screenplay.
           </div>
         )}
         {!data.screenplay && !validating && (
@@ -1197,6 +1192,12 @@ export default function Phase4() {
           </p>
         </motion.div>
 
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
+        <section aria-label="Phase 4 validation" className="min-w-0 xl:max-h-[calc(100dvh-120px)] xl:overflow-y-auto xl:pr-3 scrollbar-thin">
+          <div className="sticky top-0 z-10 bg-bg-primary py-3 mb-4 border-b border-border-subtle">
+            <p className="text-xs font-bold uppercase tracking-wider text-accent-validation">Phase 4 - Review & fix</p>
+            <p className="text-sm text-text-secondary mt-1">Apply a fix here. Review the updated screenplay alongside.</p>
+          </div>
         {/* \u2550\u2550\u2550\u2550\u2550\u2550\u2550 VERDICT BANNER \u2550\u2550\u2550\u2550\u2550\u2550\u2550 */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
@@ -1222,7 +1223,7 @@ export default function Phase4() {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, delay: 0.15, ease: easeOut }}
-          className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-8"
+          className="grid grid-cols-1 2xl:grid-cols-3 gap-4 mb-8"
         >
           {/* NPS Card */}
           <Card phaseAccent={VIOLET} className="p-5">
@@ -1510,65 +1511,49 @@ export default function Phase4() {
           )}
         </AnimatePresence>
 
-        {/* \u2550\u2550\u2550\u2550\u2550\u2550\u2550 SCENE EDITOR TOGGLE \u2550\u2550\u2550\u2550\u2550\u2550\u2550 */}
-        <motion.div className="mb-6 flex justify-center">
-          <button
-            onClick={() => setShowSceneEditor(!showSceneEditor)}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium border transition-all"
-            style={{
-              borderColor: showSceneEditor ? VIOLET : '#3A4050',
-              color: showSceneEditor ? VIOLET : '#9BA3B4',
-              backgroundColor: showSceneEditor ? `${VIOLET}10` : '#1A1D26',
-            }}
-          >
-            {showSceneEditor ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-            {showSceneEditor ? 'Hide Screenplay Editor' : 'Edit Screenplay'}
-            {appliedFixes.length > 0 && (
-              <span className="ml-1 text-xs px-1.5 py-0.5 rounded-full" style={{ backgroundColor: SUCCESS, color: '#fff' }}>
-                {appliedFixes.length} fix{appliedFixes.length > 1 ? 'es' : ''} applied
-              </span>
-            )}
-          </button>
-        </motion.div>
-
-        {/* \u2550\u2550\u2550\u2550\u2550\u2550\u2550 SCENE EDITOR SECTION \u2550\u2550\u2550\u2550\u2550\u2550\u2550 */}
-        <AnimatePresence>
-          {showSceneEditor && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.4, ease: easeOut }}
-              className="overflow-hidden mb-10"
-            >
-              {/* Header */}
-              <div className="mb-4">
-                <h2 className="text-xl font-semibold text-text-primary flex items-center gap-2">
-                  <Film size={20} style={{ color: VIOLET }} />
-                  Screenplay Editor
-                </h2>
+        </section>
+        <section aria-label="Working screenplay" className="min-w-0 rounded-xl border border-border-subtle bg-bg-secondary xl:max-h-[calc(100dvh-120px)] xl:overflow-y-auto scrollbar-thin">
+          <div className="sticky top-0 z-10 bg-bg-secondary p-4 border-b border-border-subtle">
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wider text-accent-validation">Phase 3 - Working screenplay</p>
+                <h2 className="text-lg font-semibold text-text-primary mt-1">Live script</h2>
               </div>
-
-              {/* 5 Scene Cards */}
-              <div className="space-y-6">
-                {scenes.map((scene) => (
-                  <SceneEditorCard
-                    key={scene.sceneNum}
-                    scene={scene}
-                    onChange={(field, value) => setScenes(prev => prev.map(s => s.sceneNum === scene.sceneNum ? { ...s, [field]: value } : s))}
-                  />
-                ))}
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+              <button disabled={validating} onClick={runRealValidation} className="flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-bold bg-accent-validation text-white disabled:opacity-50">
+                <RefreshCw size={14} className={validating ? 'animate-spin' : ''} />
+                {validating ? 'Validating...' : 'Re-Run Validation'}
+              </button>
+            </div>
+            <p className="text-xs text-text-secondary mt-2">This is the script carried forward to Phase 5 output.</p>
+            <p role="status" className={cn('text-xs mt-2', needsValidation ? 'text-warning' : 'text-success')}>
+              {needsValidation ? 'Script needs validation before export.' : 'Current script validated.'}
+            </p>
+            {latestFix && <p role="status" className="text-xs text-text-primary mt-3 p-2 rounded-md bg-accent-validation/10 border border-accent-validation/20">{latestFix}</p>}
+          </div>
+          <div className="p-4 space-y-5">
+            {scenes.map(scene => {
+              const original = baselineScenes.current.find(s => s.sceneNum === scene.sceneNum);
+              const changedFields = (Object.keys(scene) as (keyof EditableScene)[]).filter(key => original && original[key] !== scene[key]);
+              return (
+                <div key={scene.sceneNum} id={`working-scene-${scene.sceneNum}`} className={cn('scroll-mt-48 rounded-xl', changedFields.length > 0 && 'ring-1 ring-success/50')}>
+                  {changedFields.length > 0 && <p className="px-3 py-2 text-xs text-success bg-success/10 rounded-t-xl">Updated: {changedFields.join(', ')}</p>}
+                  <SceneEditorCard scene={scene} onChange={(field, value) => {
+                    setScenes(prev => prev.map(s => s.sceneNum === scene.sceneNum ? { ...s, [field]: value } : s));
+                    setRoles({ ...INITIAL_ROLES });
+                  }} />
+                </div>
+              );
+            })}
+          </div>
+        </section>
+        </div>
 
         {/* \u2550\u2550\u2550\u2550\u2550\u2550\u2550 NAVIGATION \u2550\u2550\u2550\u2550\u2550\u2550\u2550 */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.5, duration: 0.3 }}
-          className="flex items-center justify-between flex-wrap gap-4"
+          className="flex items-center justify-between flex-wrap gap-4 mt-8"
         >
           <button
             onClick={() => navigate('/phase/3')}
@@ -1578,30 +1563,6 @@ export default function Phase4() {
             Back to Phase 3
           </button>
 
-          {/* Re-Run Validation — visible when editor is open */}
-          <AnimatePresence>
-            {showSceneEditor && (
-              <motion.button
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9 }}
-                transition={{ duration: 0.2 }}
-                onClick={() => {
-                  runRealValidation();
-                  setShowSceneEditor(false);
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                  setToast('Re-validating with AI...');
-                  setTimeout(() => setToast(null), 3000);
-                }}
-                className="flex items-center gap-2 px-5 py-3 rounded-lg text-sm font-medium"
-                style={{ backgroundColor: VIOLET, color: '#fff' }}
-              >
-                <RefreshCw size={14} />
-                Re-Run Validation
-              </motion.button>
-            )}
-          </AnimatePresence>
-
           {/* Export button */}
           <div
             className="relative"
@@ -1610,21 +1571,16 @@ export default function Phase4() {
           >
             {!exportUnlocked && hoveredLocked && (
               <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-bg-quaternary rounded-lg text-xs text-text-secondary whitespace-nowrap border border-border-medium shadow-lg z-10">
-                {verdict !== 'SHIP' ? `Verdict is ${verdict}. Fix failures first.` : `All 4 roles must approve. ${approvedRolesCount}/4 approved.`}
+                {needsValidation ? 'Re-run validation on the current script first.' : verdict !== 'SHIP' ? `Verdict is ${verdict}. Fix failures first.` : `All 4 roles must approve. ${approvedRolesCount}/4 approved.`}
               </div>
             )}
 
             <motion.button
               onClick={() => {
                 if (exportUnlocked) {
-                  if (data.projectId) saveProject({ ...data, screenplay: realScenes ? scenes.map(s => ({
-                    sceneNum: s.sceneNum, name: s.name, timingStart: s.timingStart, timingEnd: s.timingEnd, duration: s.duration,
-                    dialogue: s.dialogue, action: s.action,
-                    camera: { shot: s.cameraShot, angle: s.cameraAngle, movement: s.cameraMovement },
-                    actor: { expression: s.actorExpression, energy: s.actorEnergy, pace: s.actorPace },
-                    visual: s.visual, audio: s.audio,
-                    editMarkers: (() => { try { return JSON.parse(s.editMarkers); } catch { return []; } })(),
-                  })) : data.screenplay }, 5, data.projectId);
+                  const screenplay = toScreenplay(scenes);
+                  updateData({ screenplay });
+                  if (data.projectId) saveProject({ ...data, screenplay }, 5, data.projectId);
                   navigate('/phase/5');
                 }
               }}
@@ -1648,7 +1604,7 @@ export default function Phase4() {
               )}
             >
               {exportUnlocked ? <Unlock size={16} /> : <Lock size={16} />}
-              {exportUnlocked ? 'Approve & Export to Phase 5' : `Locked - ${verdict}, ${approvedRolesCount}/4 roles`}
+              {exportUnlocked ? 'Approve & Export to Phase 5' : needsValidation ? 'Locked - Re-Run Validation' : `Locked - ${verdict}, ${approvedRolesCount}/4 roles`}
             </motion.button>
           </div>
         </motion.div>
