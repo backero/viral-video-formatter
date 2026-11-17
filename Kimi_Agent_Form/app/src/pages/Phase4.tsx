@@ -75,6 +75,20 @@ interface EditableScene {
   editMarkers: string; // stored as JSON string for textarea editing
 }
 
+interface AppliedChange {
+  checkId: string;
+  field: keyof EditableScene;
+  before: string;
+  after: string;
+}
+
+const FIELD_LABELS: Partial<Record<keyof EditableScene, string>> = {
+  dialogue: 'Dialogue', action: 'Action', visual: 'Visual', audio: 'Audio',
+  editMarkers: 'Edit markers', cameraShot: 'Camera shot', cameraAngle: 'Camera angle',
+  cameraMovement: 'Camera movement', actorExpression: 'Actor expression',
+  actorEnergy: 'Actor energy', actorPace: 'Actor pace', name: 'Scene name',
+};
+
 // Initial data copied from Phase 3 AUTO_SCREENPLAY
 const INITIAL_SCENES: EditableScene[] = [
   {
@@ -371,12 +385,13 @@ function NPSArc({ score }: { score: number }) {
 /*  SCENE EDITOR CARD COMPONENT                                        */
 /* ═══════════════════════════════════════════════════════════════════ */
 
-function SceneEditorCard({ scene, onChange }: { scene: EditableScene; onChange: (field: keyof EditableScene, value: string | number) => void }) {
+function SceneEditorCard({ scene, onChange, highlightedFields = new Set<keyof EditableScene>() }: { scene: EditableScene; onChange: (field: keyof EditableScene, value: string | number) => void; highlightedFields?: Set<keyof EditableScene> }) {
   const accent = '#EF4444';
   const parseMarkers = () => { try { return JSON.parse(scene.editMarkers); } catch { return []; } };
 
   const inputBaseClass = 'w-full bg-bg-tertiary border border-border-subtle rounded-lg px-3 py-2 text-sm text-text-primary placeholder:text-text-tertiary focus:border-border-medium focus:outline-none focus:ring-2 focus:ring-[#8B5CF6]/15 transition-all';
   const textareaBaseClass = 'w-full min-h-[60px] bg-bg-tertiary border border-border-subtle rounded-lg px-3 py-2 text-sm text-text-primary placeholder:text-text-tertiary focus:border-border-medium focus:outline-none focus:ring-2 focus:ring-[#8B5CF6]/15 resize-y';
+  const fixedFieldClass = (field: keyof EditableScene) => highlightedFields.has(field) ? 'border-success/60 bg-success/5 ring-1 ring-success/15' : '';
 
   return (
     <Card className="p-5">
@@ -388,7 +403,7 @@ function SceneEditorCard({ scene, onChange }: { scene: EditableScene; onChange: 
         <input
           value={scene.name}
           onChange={(e) => onChange('name', e.target.value)}
-          className="flex-1 bg-transparent text-base font-semibold text-text-primary border-b border-border-subtle focus:border-[#8B5CF6] focus:outline-none px-1"
+          className={cn('flex-1 bg-transparent text-base font-semibold text-text-primary border-b border-border-subtle focus:border-[#8B5CF6] focus:outline-none px-1', fixedFieldClass('name'))}
         />
         <span className="text-xs font-mono text-text-tertiary">{scene.timingStart}s &ndash; {scene.timingEnd}s</span>
       </div>
@@ -405,7 +420,7 @@ function SceneEditorCard({ scene, onChange }: { scene: EditableScene; onChange: 
             <textarea
               value={scene.dialogue}
               onChange={(e) => onChange('dialogue', e.target.value)}
-              className={textareaBaseClass}
+              className={cn(textareaBaseClass, fixedFieldClass('dialogue'))}
             />
           </div>
 
@@ -417,7 +432,7 @@ function SceneEditorCard({ scene, onChange }: { scene: EditableScene; onChange: 
             <textarea
               value={scene.action}
               onChange={(e) => onChange('action', e.target.value)}
-              className={cn(textareaBaseClass, 'min-h-[50px]')}
+              className={cn(textareaBaseClass, 'min-h-[50px]', fixedFieldClass('action'))}
             />
           </div>
 
@@ -427,9 +442,9 @@ function SceneEditorCard({ scene, onChange }: { scene: EditableScene; onChange: 
               <Camera size={12} /> Camera
             </label>
             <div className="grid grid-cols-3 gap-2">
-              <input value={scene.cameraShot} onChange={(e) => onChange('cameraShot', e.target.value)} placeholder="Shot" className={inputBaseClass} />
-              <input value={scene.cameraAngle} onChange={(e) => onChange('cameraAngle', e.target.value)} placeholder="Angle" className={inputBaseClass} />
-              <input value={scene.cameraMovement} onChange={(e) => onChange('cameraMovement', e.target.value)} placeholder="Movement" className={inputBaseClass} />
+              <input value={scene.cameraShot} onChange={(e) => onChange('cameraShot', e.target.value)} placeholder="Shot" className={cn(inputBaseClass, fixedFieldClass('cameraShot'))} />
+              <input value={scene.cameraAngle} onChange={(e) => onChange('cameraAngle', e.target.value)} placeholder="Angle" className={cn(inputBaseClass, fixedFieldClass('cameraAngle'))} />
+              <input value={scene.cameraMovement} onChange={(e) => onChange('cameraMovement', e.target.value)} placeholder="Movement" className={cn(inputBaseClass, fixedFieldClass('cameraMovement'))} />
             </div>
           </div>
 
@@ -439,9 +454,9 @@ function SceneEditorCard({ scene, onChange }: { scene: EditableScene; onChange: 
               <Users size={12} /> Actor
             </label>
             <div className="grid grid-cols-3 gap-2">
-              <input value={scene.actorExpression} onChange={(e) => onChange('actorExpression', e.target.value)} placeholder="Expression" className={inputBaseClass} />
-              <input type="number" min={1} max={10} value={scene.actorEnergy} onChange={(e) => onChange('actorEnergy', Number(e.target.value))} placeholder="Energy" className={inputBaseClass} />
-              <input value={scene.actorPace} onChange={(e) => onChange('actorPace', e.target.value)} placeholder="Pace" className={inputBaseClass} />
+              <input value={scene.actorExpression} onChange={(e) => onChange('actorExpression', e.target.value)} placeholder="Expression" className={cn(inputBaseClass, fixedFieldClass('actorExpression'))} />
+              <input type="number" min={1} max={10} value={scene.actorEnergy} onChange={(e) => onChange('actorEnergy', Number(e.target.value))} placeholder="Energy" className={cn(inputBaseClass, fixedFieldClass('actorEnergy'))} />
+              <input value={scene.actorPace} onChange={(e) => onChange('actorPace', e.target.value)} placeholder="Pace" className={cn(inputBaseClass, fixedFieldClass('actorPace'))} />
             </div>
           </div>
         </div>
@@ -452,19 +467,19 @@ function SceneEditorCard({ scene, onChange }: { scene: EditableScene; onChange: 
             <label className="flex items-center gap-1.5 text-xs font-bold uppercase text-text-tertiary mb-1">
               <Eye size={12} /> Visual
             </label>
-            <textarea value={scene.visual} onChange={(e) => onChange('visual', e.target.value)} className={textareaBaseClass} />
+            <textarea value={scene.visual} onChange={(e) => onChange('visual', e.target.value)} className={cn(textareaBaseClass, fixedFieldClass('visual'))} />
           </div>
           <div>
             <label className="flex items-center gap-1.5 text-xs font-bold uppercase text-text-tertiary mb-1">
               <Volume2 size={12} /> Audio
             </label>
-            <textarea value={scene.audio} onChange={(e) => onChange('audio', e.target.value)} className={textareaBaseClass} />
+            <textarea value={scene.audio} onChange={(e) => onChange('audio', e.target.value)} className={cn(textareaBaseClass, fixedFieldClass('audio'))} />
           </div>
           <div>
             <label className="flex items-center gap-1.5 text-xs font-bold uppercase text-text-tertiary mb-1">
               <Scissors size={12} /> Edit Markers (JSON)
             </label>
-            <textarea value={scene.editMarkers} onChange={(e) => onChange('editMarkers', e.target.value)} className={cn(textareaBaseClass, 'min-h-[80px] font-mono text-xs')} />
+            <textarea value={scene.editMarkers} onChange={(e) => onChange('editMarkers', e.target.value)} className={cn(textareaBaseClass, 'min-h-[80px] font-mono text-xs', fixedFieldClass('editMarkers'))} />
             <p className="text-[10px] text-text-tertiary mt-1">{parseMarkers().length} markers defined</p>
           </div>
         </div>
@@ -811,6 +826,8 @@ export default function Phase4() {
 
   const [scenes, setScenes] = useState<EditableScene[]>(realScenes ?? INITIAL_SCENES);
   const baselineScenes = useRef(scenes);
+  const [appliedChanges, setAppliedChanges] = useState<Record<number, AppliedChange[]>>({});
+  const [openChangeScenes, setOpenChangeScenes] = useState<Record<number, boolean>>({});
   const [validatedSnapshot, setValidatedSnapshot] = useState<string | null>(null);
   const [latestFix, setLatestFix] = useState<string | null>(null);
   const needsValidation = validatedSnapshot !== JSON.stringify(scenes);
@@ -956,7 +973,29 @@ export default function Phase4() {
       setLatestFix(`${checkId} is already present in the working screenplay and is marked fixed.`);
       return;
     }
+    const changesByScene = affected.reduce<Record<number, AppliedChange[]>>((all, beforeScene) => {
+      const afterScene = next.find(scene => scene.sceneNum === beforeScene.sceneNum);
+      if (!afterScene) return all;
+      const changes = (Object.keys(beforeScene) as (keyof EditableScene)[])
+        .filter(field => beforeScene[field] !== afterScene[field])
+        .map(field => ({
+          checkId,
+          field,
+          before: String(beforeScene[field]),
+          after: String(afterScene[field]),
+        }));
+      if (changes.length) all[beforeScene.sceneNum] = changes;
+      return all;
+    }, {});
     setScenes(next);
+    setAppliedChanges(previous => {
+      const updated = { ...previous };
+      Object.entries(changesByScene).forEach(([sceneNum, changes]) => {
+        updated[Number(sceneNum)] = [...(updated[Number(sceneNum)] || []), ...changes];
+      });
+      return updated;
+    });
+    setOpenChangeScenes(previous => ({ ...previous, ...Object.fromEntries(Object.keys(changesByScene).map(sceneNum => [Number(sceneNum), true])) }));
     setAppliedFixes(prev => [...new Set([...prev, checkId])]);
     setValidatedSnapshot(JSON.stringify(next));
     setChecks(prev => prev.map(item => item.id === checkId ? {
@@ -1549,10 +1588,54 @@ export default function Phase4() {
             {scenes.map(scene => {
               const original = baselineScenes.current.find(s => s.sceneNum === scene.sceneNum);
               const changedFields = (Object.keys(scene) as (keyof EditableScene)[]).filter(key => original && original[key] !== scene[key]);
+              const sceneChanges = appliedChanges[scene.sceneNum] || [];
+              const visibleChanges = openChangeScenes[scene.sceneNum];
               return (
                 <div key={scene.sceneNum} id={`working-scene-${scene.sceneNum}`} className={cn('scroll-mt-48 rounded-xl', changedFields.length > 0 && 'ring-1 ring-success/50')}>
-                  {changedFields.length > 0 && <p className="px-3 py-2 text-xs text-success bg-success/10 rounded-t-xl">Updated: {changedFields.join(', ')}</p>}
-                  <SceneEditorCard scene={scene} onChange={(field, value) => {
+                  {sceneChanges.length > 0 && (
+                    <section className="border border-success/30 bg-success/5 rounded-t-xl overflow-hidden" aria-label={`Applied changes for Scene ${scene.sceneNum}`}>
+                      <div className="flex items-center justify-between gap-3 px-3 py-2 border-b border-success/20">
+                        <p className="flex items-center gap-1.5 text-xs font-bold text-success uppercase tracking-wide">
+                          <CheckCircle2 size={13} /> Applied changes ({sceneChanges.length})
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => setOpenChangeScenes(previous => ({ ...previous, [scene.sceneNum]: !previous[scene.sceneNum] }))}
+                          className="text-xs font-medium text-success hover:text-text-primary transition-colors"
+                        >
+                          {visibleChanges ? 'Hide changes' : 'Show changes'}
+                        </button>
+                      </div>
+                      <AnimatePresence initial={false}>
+                        {visibleChanges && (
+                          <motion.div
+                            initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
+                            className="overflow-hidden"
+                          >
+                            <div className="p-3 space-y-3">
+                              {sceneChanges.map((change, index) => (
+                                <div key={`${change.checkId}-${change.field}-${index}`} className="text-xs border-l-2 border-success/50 pl-3">
+                                  <p className="font-bold text-text-primary">{change.checkId} · {FIELD_LABELS[change.field] || change.field}</p>
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-1.5">
+                                    <div className="p-2 rounded-md bg-bg-tertiary border border-border-subtle">
+                                      <span className="block text-[10px] font-bold uppercase text-text-tertiary mb-1">Before</span>
+                                      <p className="text-text-secondary whitespace-pre-wrap break-words line-clamp-4">{change.before}</p>
+                                    </div>
+                                    <div className="p-2 rounded-md bg-success/10 border border-success/25">
+                                      <span className="block text-[10px] font-bold uppercase text-success mb-1">After</span>
+                                      <p className="text-text-primary whitespace-pre-wrap break-words line-clamp-4">{change.after}</p>
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </section>
+                  )}
+                  {changedFields.length > 0 && <p className={cn('px-3 py-2 text-xs text-success bg-success/10', sceneChanges.length > 0 ? '' : 'rounded-t-xl')}>Updated fields are outlined in green.</p>}
+                  <SceneEditorCard scene={scene} highlightedFields={new Set(sceneChanges.map(change => change.field))} onChange={(field, value) => {
                     setScenes(prev => prev.map(s => s.sceneNum === scene.sceneNum ? { ...s, [field]: value } : s));
                     setRoles({ ...INITIAL_ROLES });
                   }} />
