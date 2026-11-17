@@ -904,7 +904,7 @@ export default function Phase4() {
     }));
 
     // Update FormDataContext screenplay immediately on any scene change
-    updateData({ screenplay: updatedScreenplay });
+    updateData({ ...data, screenplay: updatedScreenplay });
 
     // Save to backend if projectId exists
     if (data.projectId) {
@@ -915,7 +915,31 @@ export default function Phase4() {
         screenplay: updatedScreenplay,
       });
     }
-  }, [scenes]);
+  }, [scenes, data, updateData]);
+
+  // Sync screenplay to FormDataContext whenever Apply Fix modifies scenes
+  useEffect(() => {
+    // Convert scenes to SceneBeat format for FormDataContext
+    const updatedScreenplay = scenes.map(s => ({
+      sceneNum: s.sceneNum,
+      name: s.name,
+      timingStart: s.timingStart,
+      timingEnd: s.timingEnd,
+      duration: s.duration,
+      dialogue: s.dialogue,
+      action: s.action,
+      camera: { shot: s.cameraShot, angle: s.cameraAngle, movement: s.cameraMovement },
+      actor: { expression: s.actorExpression, energy: s.actorEnergy, pace: s.actorPace },
+      visual: s.visual,
+      audio: s.audio,
+      editMarkers: typeof s.editMarkers === 'string' ? JSON.parse(s.editMarkers) : s.editMarkers,
+    }));
+
+    // Only sync if fixes were applied (scenes changed from Apply Fix)
+    if (appliedFixes.length > 0) {
+      updateData({ ...data, screenplay: updatedScreenplay });
+    }
+  }, [scenes, appliedFixes, data, updateData]);
 
 
   const handleOverride = useCallback((checkId: string) => {
@@ -925,69 +949,14 @@ export default function Phase4() {
   /* â•â•â•â•â•â•â• APPLY FIX HANDLER â•â•â•â•â•â•â• */
   const handleApplyFix = useCallback((checkId: string) => {
     setScenes(prev => {
-      const next = [...prev];
-      switch (checkId) {
-        case 'GR07':
-        case 'QG10': {
-          const s4 = { ...next[3] };
-          if (!s4.visual.includes('B-roll insert at 20.0s')) {
-            s4.visual = s4.visual + '; B-roll insert added mid-scene to break up the static shot';
-          }
-          try {
-            const markers = JSON.parse(s4.editMarkers);
-            markers.splice(Math.min(2, markers.length), 0, { time: 'mid-scene', event: 'B-roll cutaway - breaks static shot' });
-            s4.editMarkers = JSON.stringify(markers, null, 0);
-          } catch {}
-          next[3] = s4;
-          break;
-        }
-        case 'GR09': {
-          // Add a generic bridge marker without overwriting the actual dialogue content
-          const s2 = { ...next[1] };
-          if (!s2.dialogue.match(/^(And|But|So|Which means)/i)) {
-            s2.dialogue = 'But here\u2019s the part that matters: ' + s2.dialogue;
-          }
-          next[1] = s2;
-          break;
-        }
-        case 'QG09': {
-          const s4 = { ...next[3] };
-          if (!s4.visual.includes('text overlay reinforcing the key number')) {
-            s4.visual = s4.visual + '; on-screen text overlay reinforcing the key number for muted viewers';
-          }
-          next[3] = s4;
-          break;
-        }
-        case 'NS02': {
-          const s4 = { ...next[3] };
-          if (!s4.visual.includes('primary hero text')) {
-            s4.visual = 'Primary hero text pop-in within 0.3s of scene start; ' + s4.visual;
-          }
-          next[3] = s4;
-          break;
-        }
-        case 'NS04':
-        case 'SA04': {
-          // Do NOT overwrite real dialogue with canned example text.
-          // These checks are about "you/your" density â€” flag for manual rewrite instead of auto-mutating content.
-          break;
-        }
-      }
-      return next;
+      const checkData = checks.find(c => c.id === checkId);
+      if (!checkData) return prev;
+      return applyFix(prev, checkId, checkData.suggestedFix, checkData.scenesAffected);
     });
-    // Immediately mark the check as PASS with updated evidence
     setChecks(prev => prev.map(c => {
       if (c.id !== checkId) return c;
-      const fixEvidence: Record<string, string> = {
-        GR07: 'Marked fixed: B-roll insert added to Scene 4 to break up the static shot.',
-        QG10: 'Marked fixed: visual change added to Scene 4 so no segment exceeds 2s.',
-        GR09: 'Marked fixed: bridge phrase added to Scene 2 opening.',
-        QG09: 'Marked fixed: on-screen text overlay added to Scene 4 for muted viewers.',
-        NS02: 'Marked fixed: primary hero text added to Scene 4 for tri-modal convergence.',
-        NS04: 'Acknowledged \u2014 this needs a manual dialogue rewrite to raise "you/your" density; not auto-applied to avoid overwriting your real script.',
-        SA04: 'Acknowledged \u2014 this needs a manual dialogue rewrite to raise "you/your" density; not auto-applied to avoid overwriting your real script.',
-      };
-      return { ...c, result: (checkId === 'NS04' || checkId === 'SA04') ? c.result : 'PASS', evidence: fixEvidence[checkId] || `Marked fixed: ${c.name} correction applied.`, suggestedFix: (checkId === 'NS04' || checkId === 'SA04') ? c.suggestedFix : undefined, overridden: (checkId === 'NS04' || checkId === 'SA04') ? true : c.overridden };
+      const manualOnly = ['NS04', 'SA04'];
+      return { ...c, result: manualOnly.includes(checkId) ? c.result : 'PASS', evidence: getFixEvidence(checkId, c.name, c.suggestedFix), overridden: manualOnly.includes(checkId) };
     }));
     setAppliedFixes(prev => [...prev, checkId]);
   }, [checks]);
@@ -1707,4 +1676,5 @@ export default function Phase4() {
     </Layout>
   );
 }
+
 
