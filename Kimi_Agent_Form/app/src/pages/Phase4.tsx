@@ -6,7 +6,7 @@ import {
   ArrowLeft, Shield, AlertTriangle, BarChart3, Zap, Brain,
   FileText, Eye, Camera, Target,
   Sparkles, Lock, Unlock, Users, Film,
-  RefreshCw, Mic, Volume2, Scissors
+  RefreshCw, Mic, Volume2, Scissors, Undo2, Columns3
 } from 'lucide-react';
 import { Layout } from '@/components/Layout';
 import { Card } from '@/components/Card';
@@ -82,12 +82,49 @@ interface AppliedChange {
   after: string;
 }
 
+interface FixHistoryItem {
+  checkId: string;
+  changes: Array<AppliedChange & { sceneNum: number }>;
+  checkBefore: Pick<CheckItem, 'result' | 'evidence' | 'suggestedFix' | 'overridden'>;
+}
+
 const FIELD_LABELS: Partial<Record<keyof EditableScene, string>> = {
   dialogue: 'Dialogue', action: 'Action', visual: 'Visual', audio: 'Audio',
   editMarkers: 'Edit markers', cameraShot: 'Camera shot', cameraAngle: 'Camera angle',
   cameraMovement: 'Camera movement', actorExpression: 'Actor expression',
   actorEnergy: 'Actor energy', actorPace: 'Actor pace', name: 'Scene name',
 };
+
+type EditMarker = { time?: string; event?: string };
+
+function parseEditMarkers(value: unknown): EditMarker[] | null {
+  try {
+    const parsed = typeof value === 'string' ? JSON.parse(value) : value;
+    return Array.isArray(parsed) && parsed.every(marker => marker && typeof marker === 'object')
+      ? parsed as EditMarker[]
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+function EditMarkerDiffValue({ value, final }: { value: unknown; final?: boolean }) {
+  const markers = parseEditMarkers(value);
+  if (!markers) {
+    return <p className={final ? 'whitespace-pre-wrap break-words text-xs text-text-primary' : 'whitespace-pre-wrap break-words text-xs text-text-secondary'}>{String(value)}</p>;
+  }
+  if (markers.length === 0) return <p className="text-xs text-text-tertiary">No edit markers</p>;
+  return (
+    <div className="space-y-1.5">
+      {markers.map((marker, index) => (
+        <div key={`${marker.time || 'marker'}-${index}`} className="flex items-start gap-2 text-xs">
+          <span className={final ? 'shrink-0 font-mono text-success' : 'shrink-0 font-mono text-text-tertiary'}>{marker.time || '--'}</span>
+          <span className={final ? 'text-text-primary' : 'text-text-secondary'}>{marker.event || 'Untitled marker'}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 // Initial data copied from Phase 3 AUTO_SCREENPLAY
 const INITIAL_SCENES: EditableScene[] = [
@@ -827,8 +864,10 @@ export default function Phase4() {
   const [scenes, setScenes] = useState<EditableScene[]>(realScenes ?? INITIAL_SCENES);
   const baselineScenes = useRef(scenes);
   const [appliedChanges, setAppliedChanges] = useState<Record<number, AppliedChange[]>>({});
+  const [fixHistory, setFixHistory] = useState<FixHistoryItem[]>([]);
   const [openChangeScenes, setOpenChangeScenes] = useState<Record<number, boolean>>({});
   const [focusedChangeScene, setFocusedChangeScene] = useState<number | null>(null);
+  const [showCompare, setShowCompare] = useState(false);
   const [validatedSnapshot, setValidatedSnapshot] = useState<string | null>(null);
   const [latestFix, setLatestFix] = useState<string | null>(null);
   const needsValidation = validatedSnapshot !== JSON.stringify(scenes);
@@ -993,6 +1032,9 @@ export default function Phase4() {
       if (changes.length) all[beforeScene.sceneNum] = changes;
       return all;
     }, {});
+    const changeHistory = Object.entries(changesByScene).flatMap(([sceneNum, changes]) =>
+      changes.map(change => ({ ...change, sceneNum: Number(sceneNum) }))
+    );
     setScenes(next);
     setAppliedChanges(previous => {
       const updated = { ...previous };
@@ -1001,6 +1043,16 @@ export default function Phase4() {
       });
       return updated;
     });
+    setFixHistory(previous => [...previous, {
+      checkId,
+      changes: changeHistory,
+      checkBefore: {
+        result: check?.result || 'FAIL',
+        evidence: check?.evidence || '',
+        suggestedFix: check?.suggestedFix,
+        overridden: check?.overridden || false,
+      },
+    }]);
     setOpenChangeScenes(previous => ({ ...previous, ...Object.fromEntries(Object.keys(changesByScene).map(sceneNum => [Number(sceneNum), true])) }));
     setFocusedChangeScene(affected[0].sceneNum);
     setAppliedFixes(prev => [...new Set([...prev, checkId])]);
@@ -1014,6 +1066,52 @@ export default function Phase4() {
     } : item));
     setLatestFix(`${checkId} fixed immediately in scenes ${affected.map(s => s.sceneNum).join(', ')}. The working screenplay is updated.`);
   }, [checks, scenes]);
+
+  const handleUndoFix = useCallback((checkId: string) => {
+    const historyIndex = [...fixHistory].map(item => item.checkId).lastIndexOf(checkId);
+    if (historyIndex === -1) return;
+    const removed = fixHistory[historyIndex];
+    const remaining = fixHistory.filter((_, index) => index !== historyIndex);
+    // Rebuild only fields touched by a fix from the original baseline plus the
+    // remaining history. This makes undoing an older fix safe when a newer one
+    // changed the same field, and lets that newer fix be undone later as well.
+    const touchedFields = new Map<number, Set<keyof EditableScene>>();
+    fixHistory.forEach(item => item.changes.forEach(change => {
+      const fields = touchedFields.get(change.sceneNum) || new Set<keyof EditableScene>();
+      fields.add(change.field);
+      touchedFields.set(change.sceneNum, fields);
+    }));
+    const next = scenes.map(scene => {
+      const original = baselineScenes.current.find(item => item.sceneNum === scene.sceneNum);
+      const rebuilt = { ...scene };
+      touchedFields.get(scene.sceneNum)?.forEach(field => {
+        const latest = [...remaining].reverse().flatMap(item => item.changes)
+          .find(change => change.sceneNum === scene.sceneNum && change.field === field);
+        rebuilt[field] = (latest?.after ?? original?.[field] ?? scene[field]) as never;
+      });
+      return rebuilt;
+    });
+    const historyByScene = remaining.reduce<Record<number, AppliedChange[]>>((all, item) => {
+      item.changes.forEach(({ sceneNum, ...change }) => {
+        all[sceneNum] = [...(all[sceneNum] || []), change];
+      });
+      return all;
+    }, {});
+    setScenes(next);
+    setFixHistory(remaining);
+    setAppliedChanges(historyByScene);
+    setAppliedFixes(previous => previous.filter(id => id !== checkId));
+    setChecks(previous => previous.map(item => item.id === checkId ? {
+      ...item,
+      result: removed.checkBefore.result === 'PASS' ? 'FAIL' : removed.checkBefore.result,
+      evidence: removed.checkBefore.evidence,
+      suggestedFix: removed.checkBefore.suggestedFix,
+      overridden: removed.checkBefore.overridden,
+    } : item));
+    const firstScene = removed.changes[0]?.sceneNum;
+    if (firstScene) setFocusedChangeScene(firstScene);
+    setLatestFix(`${checkId} was undone. The prior screenplay values have been restored.`);
+  }, [fixHistory, scenes]);
 
   /* ═══════ RE-VALIDATE HANDLER ═══════ */
   const handleReValidate = useCallback(() => {
@@ -1580,10 +1678,23 @@ export default function Phase4() {
                 <p className="text-xs font-bold uppercase tracking-wider text-accent-validation">Phase 3 - Working screenplay</p>
                 <h2 className="text-lg font-semibold text-text-primary mt-1">Live script</h2>
               </div>
-              <button disabled={validating} onClick={runRealValidation} className="flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-bold bg-accent-validation text-white disabled:opacity-50">
-                <RefreshCw size={14} className={validating ? 'animate-spin' : ''} />
-                {validating ? 'Validating...' : 'Re-Run Validation'}
-              </button>
+              <div className="flex items-center gap-2 flex-wrap">
+                <button
+                  type="button"
+                  onClick={() => setShowCompare(previous => !previous)}
+                  className={cn(
+                    'flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-bold border transition-colors',
+                    showCompare ? 'border-success/40 bg-success/10 text-success' : 'border-border-subtle bg-bg-tertiary text-text-secondary hover:text-text-primary'
+                  )}
+                >
+                  <Columns3 size={14} />
+                  {showCompare ? 'Back to editor' : 'Compare original'}
+                </button>
+                <button disabled={validating} onClick={runRealValidation} className="flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-bold bg-accent-validation text-white disabled:opacity-50">
+                  <RefreshCw size={14} className={validating ? 'animate-spin' : ''} />
+                  {validating ? 'Validating...' : 'Re-Run Validation'}
+                </button>
+              </div>
             </div>
             <p className="text-xs text-text-secondary mt-2">This is the script carried forward to Phase 5 output.</p>
             <p role="status" className="text-xs mt-2 text-success">
@@ -1592,7 +1703,57 @@ export default function Phase4() {
             {latestFix && <p role="status" className="text-xs text-text-primary mt-3 p-2 rounded-md bg-accent-validation/10 border border-accent-validation/20">{latestFix}</p>}
           </div>
           <div className="p-4 space-y-5">
-            {scenes.map(scene => {
+            {showCompare ? (
+              <section aria-label="Original and final screenplay comparison" className="space-y-4">
+                <div className="rounded-lg border border-success/25 bg-success/5 px-3 py-2 text-xs text-success">
+                  Original Phase 3 script is on the left. Final fixed script is on the right. Only changed fields are shown.
+                </div>
+                {scenes.map(scene => {
+                  const original = baselineScenes.current.find(item => item.sceneNum === scene.sceneNum);
+                  const changedFields = original
+                    ? (Object.keys(scene) as (keyof EditableScene)[]).filter(field => original[field] !== scene[field])
+                    : [];
+                  if (!original || changedFields.length === 0) return null;
+                  return (
+                    <article key={scene.sceneNum} className="rounded-xl border border-border-subtle overflow-hidden">
+                      <header className="flex items-center justify-between gap-3 bg-bg-tertiary/50 px-3 py-2">
+                        <p className="text-sm font-semibold text-text-primary">Scene {scene.sceneNum}: {scene.name}</p>
+                        <span className="text-xs text-success">{changedFields.length} change{changedFields.length === 1 ? '' : 's'}</span>
+                      </header>
+                      <div className="p-3 space-y-3">
+                        {changedFields.map(field => (
+                          <div key={field}>
+                            <p className="mb-1.5 text-[10px] font-bold uppercase tracking-wider text-text-tertiary">{FIELD_LABELS[field] || field}</p>
+                            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                              <div className="rounded-md border border-border-subtle bg-bg-tertiary p-2">
+                                <span className="block text-[10px] font-bold uppercase text-text-tertiary mb-1">Original</span>
+                                {field === 'editMarkers'
+                                  ? <EditMarkerDiffValue value={original[field]} />
+                                  : <p className="whitespace-pre-wrap break-words text-xs text-text-secondary">{String(original[field])}</p>}
+                              </div>
+                              <div className="rounded-md border border-success/30 bg-success/10 p-2">
+                                <span className="block text-[10px] font-bold uppercase text-success mb-1">Final</span>
+                                {field === 'editMarkers'
+                                  ? <EditMarkerDiffValue value={scene[field]} final />
+                                  : <p className="whitespace-pre-wrap break-words text-xs text-text-primary">{String(scene[field])}</p>}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </article>
+                  );
+                })}
+                {!scenes.some(scene => {
+                  const original = baselineScenes.current.find(item => item.sceneNum === scene.sceneNum);
+                  return original && (Object.keys(scene) as (keyof EditableScene)[]).some(field => original[field] !== scene[field]);
+                }) && (
+                  <p className="rounded-lg border border-border-subtle bg-bg-tertiary/40 p-4 text-sm text-text-secondary">
+                    No applied changes yet. Click Apply Fix to compare the original screenplay with the final version.
+                  </p>
+                )}
+              </section>
+            ) : scenes.map(scene => {
               const original = baselineScenes.current.find(s => s.sceneNum === scene.sceneNum);
               const changedFields = (Object.keys(scene) as (keyof EditableScene)[]).filter(key => original && original[key] !== scene[key]);
               const sceneChanges = appliedChanges[scene.sceneNum] || [];
@@ -1612,6 +1773,18 @@ export default function Phase4() {
                         >
                           {visibleChanges ? 'Hide changes' : 'Show changes'}
                         </button>
+                      </div>
+                      <div className="flex flex-wrap gap-2 px-3 py-2 border-b border-success/15">
+                        {[...new Set(sceneChanges.map(change => change.checkId))].map(checkId => (
+                          <button
+                            key={checkId}
+                            type="button"
+                            onClick={() => handleUndoFix(checkId)}
+                            className="inline-flex items-center gap-1 rounded-md border border-warning/30 bg-warning/10 px-2 py-1 text-[11px] font-semibold text-warning hover:bg-warning/20"
+                          >
+                            <Undo2 size={12} /> Undo {checkId}
+                          </button>
+                        ))}
                       </div>
                       <AnimatePresence initial={false}>
                         {visibleChanges && (
