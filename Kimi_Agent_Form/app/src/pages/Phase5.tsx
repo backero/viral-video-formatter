@@ -5,7 +5,7 @@ import {
   FileText, Mic, Camera, Scissors, Download,
   Copy, Check, ChevronLeft,
   FileDown, Film, Clapperboard, Printer,
-  Package, Shield,
+  Package, Shield, Target,
   Zap, Sparkles, CheckCircle2, Share2, RefreshCw
 } from 'lucide-react';
 import { Layout } from '@/components/Layout';
@@ -347,6 +347,11 @@ export default function Phase5({ isShared = false }: Phase5Props) {
         language: data.language || 'EN',
       }
     : DEFAULT_META;
+
+  // The final scene is the CTA even when an AI-generated scene uses a custom name.
+  // Prefer its final Phase 4 dialogue so Output always reflects the approved script.
+  const ctaScene = activeScenes.find(scene => /\bcta\b|call to action/i.test(scene.name)) ?? activeScenes[activeScenes.length - 1];
+  const finalCtaText = ctaScene?.dialogue?.trim() || data.phase2CtaText?.trim() || '';
 
   const handleMarkComplete = () => {
     if (data.projectId) {
@@ -1183,6 +1188,31 @@ export default function Phase5({ isShared = false }: Phase5Props) {
             ))}
           </div>
         </motion.div>
+
+        {finalCtaText && (
+          <motion.section
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.35, delay: 0.08, ease: easeOut }}
+            className="mb-6 rounded-xl border border-pink-500/30 bg-pink-500/5 p-4"
+            aria-label="Final call to action"
+          >
+            <div className="flex items-start gap-3">
+              <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-pink-500/15 text-pink-400">
+                <Target size={18} />
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs font-bold uppercase tracking-wider text-pink-400">Final Call to Action</p>
+                <p className="mt-1 text-lg font-semibold text-text-primary">{finalCtaText}</p>
+                <p className="mt-2 text-xs text-text-secondary">
+                  Scene {ctaScene.sceneNum} · {ctaScene.timingStart}s–{ctaScene.timingEnd}s
+                  {ctaScene.action ? ` · ${ctaScene.action}` : ''}
+                </p>
+                {ctaScene.visual && <p className="mt-1 text-xs text-text-tertiary">On-screen: {ctaScene.visual}</p>}
+              </div>
+            </div>
+          </motion.section>
+        )}
 
         {/* ---- Tab Bar ---- */}
         <motion.div
