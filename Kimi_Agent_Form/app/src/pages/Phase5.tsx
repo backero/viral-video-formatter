@@ -19,7 +19,7 @@ import { saveProject } from '@/lib/projectStore';
 /*  Types                                                              */
 /* ------------------------------------------------------------------ */
 
-type DocTab = 'all' | 'actor' | 'camera' | 'edit' | 'script' | 'golden-rules';
+type DocTab = 'all' | 'actor' | 'camera' | 'edit' | 'script' | 'shoot' | 'golden-rules';
 
 interface SceneData {
   sceneNum: number;
@@ -276,6 +276,7 @@ const TABS: { id: DocTab; label: string; icon: React.ComponentType<{ size?: numb
   { id: 'camera', label: 'Camera Sheet', icon: Camera },
   { id: 'edit', label: 'Edit Timeline', icon: Scissors },
   { id: 'script', label: 'Clean Script', icon: FileText },
+  { id: 'shoot', label: 'Shoot Checklist', icon: Clapperboard },
   { id: 'golden-rules', label: 'Golden Rules', icon: Shield },
 ];
 
@@ -648,6 +649,20 @@ export default function Phase5({ isShared = false }: Phase5Props) {
     return lines.join('\n');
   }, [activeMeta, activeScenes, finalFixes]);
 
+  const shootChecklistText = useMemo(() => activeScenes.map(scene => {
+    const markers = parseEditMarkers(scene.editMarkers);
+    return [
+      `SCENE ${scene.sceneNum}: ${scene.name} (${scene.timingStart}s-${scene.timingEnd}s)`,
+      `Dialogue: ${scene.dialogue || 'Needs detail'}`,
+      `Action: ${scene.action || 'Needs detail'}`,
+      `Camera: ${[scene.cameraShot, scene.cameraAngle, scene.cameraMovement].filter(Boolean).join(' | ') || 'Needs detail'}`,
+      `Actor: ${[scene.actorExpression, `Energy ${scene.actorEnergy}`, scene.actorPace].filter(Boolean).join(' | ') || 'Needs detail'}`,
+      `Visual: ${scene.visual || 'Needs detail'}`,
+      `Audio: ${scene.audio || 'Needs detail'}`,
+      `Markers: ${markers.map((marker: any) => `${marker.time}: ${marker.event}`).join('; ') || 'Needs detail'}`,
+    ].join('\n');
+  }).join('\n\n---\n\n'), [activeScenes]);
+
   /* ---- Golden Rules Text ---- */
   const goldenRulesText = useMemo(() => {
     const lines = [
@@ -668,6 +683,7 @@ export default function Phase5({ isShared = false }: Phase5Props) {
       case 'camera': return <CameraSheetView />;
       case 'edit': return <EditTimelineView />;
       case 'script': return <CleanScriptView />;
+      case 'shoot': return <ShootChecklistView />;
       case 'golden-rules': return <GoldenRulesView />;
       default: return <AllDocumentsView />;
     }
@@ -695,6 +711,10 @@ export default function Phase5({ isShared = false }: Phase5Props) {
 
         <DocumentSection id="script" title="Clean Script" icon={<FileText size={18} style={{ color: ACCENT }} />} copyText={cleanScriptText}>
           <CleanScriptInner />
+        </DocumentSection>
+
+        <DocumentSection id="shoot" title="Shoot Checklist" icon={<Clapperboard size={18} style={{ color: ACCENT }} />} copyText={shootChecklistText}>
+          <ShootChecklistInner />
         </DocumentSection>
 
         <DocumentSection id="golden-rules" title="18 Golden Rules" icon={<Shield size={18} style={{ color: ACCENT }} />} copyText={goldenRulesText}>
@@ -1080,6 +1100,51 @@ export default function Phase5({ isShared = false }: Phase5Props) {
         <CleanScriptInner />
       </div>
     );
+  }
+
+  function ShootChecklistInner() {
+    const fields = (scene: SceneData) => [
+      { label: 'Dialogue', value: scene.dialogue },
+      { label: 'Action', value: scene.action },
+      { label: 'Camera', value: [scene.cameraShot, scene.cameraAngle, scene.cameraMovement].filter(Boolean).join(' · ') },
+      { label: 'Actor', value: [scene.actorExpression, `Energy ${scene.actorEnergy}`, scene.actorPace].filter(Boolean).join(' · ') },
+      { label: 'Visual', value: scene.visual },
+      { label: 'Audio', value: scene.audio },
+    ];
+    return <div className="space-y-3">
+      {activeScenes.map((scene, index) => {
+        const markers = parseEditMarkers(scene.editMarkers);
+        const isCta = scene === ctaScene;
+        return <details key={scene.sceneNum} open={index === 0} className={cn('group rounded-xl border bg-bg-tertiary/20', isCta ? 'border-pink-500/35' : 'border-border-subtle')}>
+          <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3">
+            <div className="flex min-w-0 items-center gap-3">
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-accent-validation/15 text-xs font-bold text-accent-validation">{scene.sceneNum}</span>
+              <div><p className="text-sm font-semibold text-text-primary">{scene.name}</p><p className="text-xs text-text-tertiary">{scene.timingStart}s–{scene.timingEnd}s · {scene.duration}s</p></div>
+            </div>
+            {isCta ? <span className="rounded-md bg-pink-500/15 px-2 py-1 text-[10px] font-bold uppercase text-pink-400">Final CTA</span> : <span className="text-xs text-success">Ready</span>}
+          </summary>
+          <div className="border-t border-border-subtle px-4 py-4">
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+              {fields(scene).map(field => <div key={field.label} className="border-l-2 border-success/50 bg-bg-secondary/60 px-3 py-2">
+                <p className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-text-tertiary"><CheckCircle2 size={12} className={field.value ? 'text-success' : 'text-warning'} />{field.label}</p>
+                <p className={cn('mt-1 whitespace-pre-wrap text-xs leading-relaxed', field.value ? 'text-text-primary' : 'text-warning')}>{field.value || 'Needs detail'}</p>
+              </div>)}
+            </div>
+            <div className="mt-3 rounded-lg border border-border-subtle bg-bg-secondary/40 p-3">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-text-tertiary">Edit markers</p>
+              {markers.length ? <div className="mt-2 space-y-1.5">{markers.map((marker: any, markerIndex: number) => <p key={markerIndex} className="text-xs text-text-secondary"><span className="mr-2 font-mono text-success">{marker.time}</span>{marker.event}</p>)}</div> : <p className="mt-1 text-xs text-warning">Needs detail</p>}
+            </div>
+          </div>
+        </details>;
+      })}
+    </div>;
+  }
+
+  function ShootChecklistView() {
+    return <div className="space-y-6">
+      <div className="flex flex-wrap items-start justify-between gap-4"><div className="flex items-center gap-3"><div className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent-validation/15 text-accent-validation"><Clapperboard size={20} /></div><div><h3 className="text-lg font-semibold text-text-primary">Shoot Checklist</h3><p className="text-sm text-text-secondary">Final fixed screenplay, ready for production.</p></div></div><ActionBar copyText={shootChecklistText} onPrint={() => printSection('shoot')} /></div>
+      <ShootChecklistInner />
+    </div>;
   }
 
   /* ---- Golden Rules ---- */
