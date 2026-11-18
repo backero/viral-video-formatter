@@ -88,6 +88,13 @@ interface FixHistoryItem {
   checkBefore: Pick<CheckItem, 'result' | 'evidence' | 'suggestedFix' | 'overridden'>;
 }
 
+interface RewriteOption {
+  id: string;
+  label: string;
+  description: string;
+  changes: Array<AppliedChange & { sceneNum: number }>;
+}
+
 const FIELD_LABELS: Partial<Record<keyof EditableScene, string>> = {
   dialogue: 'Dialogue', action: 'Action', visual: 'Visual', audio: 'Audio',
   editMarkers: 'Edit markers', cameraShot: 'Camera shot', cameraAngle: 'Camera angle',
@@ -529,11 +536,12 @@ function SceneEditorCard({ scene, onChange, highlightedFields = new Set<keyof Ed
 /*  CHECK CARD                                                         */
 /* ═══════════════════════════════════════════════════════════════════ */
 
-function CheckCard({ check, onOverride, onApplyFix, isFixApplied }: { check: CheckItem; onOverride?: (id: string) => void; onApplyFix?: (id: string) => void; isFixApplied?: boolean }) {
+function CheckCard({ check, onOverride, onApplyFix, onApplyRewrite, getRewriteOptions, isFixApplied }: { check: CheckItem; onOverride?: (id: string) => void; onApplyFix?: (id: string) => void; onApplyRewrite?: (id: string, option: RewriteOption) => void; getRewriteOptions?: (check: CheckItem) => RewriteOption[]; isFixApplied?: boolean }) {
   // check.result starts as 'N/A' until the real validation response lands, so the
   // mount-time initializer below never actually sees 'FAIL'. Auto-expand once, the
   // first time this card settles into a real FAIL result.
   const [expanded, setExpanded] = useState(false);
+  const [showRewriteOptions, setShowRewriteOptions] = useState(false);
   const autoExpandedRef = useRef(false);
   useEffect(() => {
     if (!autoExpandedRef.current && check.result === 'FAIL') {
@@ -617,6 +625,44 @@ function CheckCard({ check, onOverride, onApplyFix, isFixApplied }: { check: Che
                           <p className="text-[10px] font-bold text-warning uppercase tracking-wider mb-0.5">Suggested Fix</p>
                           <p className="text-sm text-text-secondary">{check.suggestedFix}</p>
                         </div>
+                      </div>
+                    )}
+
+                    {check.result === 'FAIL' && !check.overridden && getRewriteOptions && onApplyRewrite && (
+                      <div>
+                        <button
+                          type="button"
+                          onClick={() => setShowRewriteOptions(previous => !previous)}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-accent-validation/30 bg-accent-validation/10 text-accent-validation hover:bg-accent-validation/20 transition-colors"
+                        >
+                          <Sparkles size={12} /> {showRewriteOptions ? 'Hide rewrite options' : 'Rewrite options'}
+                        </button>
+                        <AnimatePresence initial={false}>
+                          {showRewriteOptions && (
+                            <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
+                              <div className="mt-3 grid grid-cols-1 gap-2 lg:grid-cols-3">
+                                {getRewriteOptions(check).map(option => (
+                                  <article key={option.id} className="rounded-lg border border-border-subtle bg-bg-tertiary/50 p-3">
+                                    <p className="text-xs font-bold text-text-primary">{option.label}</p>
+                                    <p className="mt-1 text-[11px] text-text-secondary">{option.description}</p>
+                                    <div className="mt-2 space-y-1.5">
+                                      {option.changes.map(change => (
+                                        <div key={`${change.sceneNum}-${change.field}`} className="text-[10px]">
+                                          <span className="font-bold text-text-tertiary">Scene {change.sceneNum} · {FIELD_LABELS[change.field] || change.field}</span>
+                                          <p className="mt-0.5 text-text-tertiary line-clamp-2">Before: {change.before}</p>
+                                          <p className="mt-0.5 text-success line-clamp-2">After: {change.after}</p>
+                                        </div>
+                                      ))}
+                                    </div>
+                                    <button type="button" onClick={() => onApplyRewrite(check.id, option)} className="mt-3 w-full rounded-md bg-success/15 px-2 py-1.5 text-[11px] font-bold text-success hover:bg-success/25 transition-colors">
+                                      Apply this rewrite
+                                    </button>
+                                  </article>
+                                ))}
+                              </div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
                       </div>
                     )}
 
@@ -978,6 +1024,67 @@ export default function Phase4() {
   const handleOverride = useCallback((checkId: string) => {
     setChecks(prev => prev.map(c => c.id === checkId ? { ...c, overridden: !c.overridden } : c));
   }, []);
+
+  const getRewriteOptions = useCallback((check: CheckItem): RewriteOption[] => {
+    const targets = check.scenesAffected?.length ? check.scenesAffected : [check.id === 'GR09' ? 2 : 4];
+    const target = scenes.find(scene => targets.includes(scene.sceneNum));
+    if (!target) return [];
+    const suggestion = check.suggestedFix || `Apply the ${check.name} correction.`;
+    const dialogueRule = ['GR09', 'QG02', 'QG03', 'QG04', 'NS04', 'SA01', 'SA04', 'SA05', 'PBL04'].includes(check.id);
+    const field: keyof EditableScene = dialogueRule ? 'dialogue' : 'action';
+    const before = String(target[field]);
+    const buildAfter = (approach: 'concise' | 'demonstration' | 'audience') => {
+      if (field === 'dialogue') {
+        if (approach === 'concise') return `So, ${target.dialogue}`;
+        if (approach === 'demonstration') return `Watch this: ${target.dialogue}`;
+        return `For you: ${target.dialogue}`;
+      }
+      if (approach === 'concise') return `${target.action}\nDirection: ${suggestion}`;
+      if (approach === 'demonstration') return `${target.action}\nShow this clearly: ${suggestion}`;
+      return `${target.action}\nViewer takeaway: ${suggestion}`;
+    };
+    const labels: Array<[RewriteOption['id'], string, string, 'concise' | 'demonstration' | 'audience']> = [
+      ['concise', 'Concise', 'A short correction that keeps the current rhythm.', 'concise'],
+      ['demonstration', 'Demonstration-led', 'Frames the idea as something the viewer can see.', 'demonstration'],
+      ['audience', 'Audience-led', 'Connects the correction directly to the viewer.', 'audience'],
+    ];
+    return labels.map(([id, label, description, approach]) => ({
+      id,
+      label,
+      description,
+      changes: [{ checkId: check.id, sceneNum: target.sceneNum, field, before, after: buildAfter(approach) }],
+    }));
+  }, [scenes]);
+
+  const handleApplyRewrite = useCallback((checkId: string, option: RewriteOption) => {
+    const check = checks.find(item => item.id === checkId);
+    if (!check || option.changes.length === 0) return;
+    const next = scenes.map(scene => {
+      const changes = option.changes.filter(change => change.sceneNum === scene.sceneNum);
+      if (!changes.length) return scene;
+      const updated = { ...scene };
+      changes.forEach(change => { updated[change.field] = change.after as never; });
+      return updated;
+    });
+    if (JSON.stringify(next) === JSON.stringify(scenes)) return;
+    const changesByScene = option.changes.reduce<Record<number, AppliedChange[]>>((all, change) => {
+      all[change.sceneNum] = [...(all[change.sceneNum] || []), { checkId, field: change.field, before: change.before, after: change.after }];
+      return all;
+    }, {});
+    setScenes(next);
+    setAppliedChanges(previous => {
+      const updated = { ...previous };
+      Object.entries(changesByScene).forEach(([sceneNum, changes]) => { updated[Number(sceneNum)] = [...(updated[Number(sceneNum)] || []), ...changes]; });
+      return updated;
+    });
+    setFixHistory(previous => [...previous, { checkId, changes: option.changes, checkBefore: { result: check.result, evidence: check.evidence, suggestedFix: check.suggestedFix, overridden: check.overridden } }]);
+    setOpenChangeScenes(previous => ({ ...previous, ...Object.fromEntries(option.changes.map(change => [change.sceneNum, true])) }));
+    setFocusedChangeScene(option.changes[0].sceneNum);
+    setAppliedFixes(previous => [...new Set([...previous, checkId])]);
+    setValidatedSnapshot(JSON.stringify(next));
+    setChecks(previous => previous.map(item => item.id === checkId ? { ...item, result: 'PASS', evidence: `${option.label} rewrite applied directly to Scene ${option.changes.map(change => change.sceneNum).join(', ')}.`, suggestedFix: undefined, overridden: false } : item));
+    setLatestFix(`${option.label} rewrite applied. The final screenplay and Phase 5 output are updated.`);
+  }, [checks, scenes]);
 
   /* ═══════ APPLY FIX HANDLER ═══════ */
   const handleApplyFix = useCallback((checkId: string) => {
@@ -1569,6 +1676,8 @@ export default function Phase4() {
                   check={check}
                   onOverride={handleOverride}
                   onApplyFix={handleApplyFix}
+                  onApplyRewrite={handleApplyRewrite}
+                  getRewriteOptions={getRewriteOptions}
                   isFixApplied={appliedFixes.includes(check.id)}
                 />
               ))}
