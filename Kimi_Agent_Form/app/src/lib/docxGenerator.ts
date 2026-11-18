@@ -146,6 +146,7 @@ export async function generateProductionPackDOCX(input?: ProductionPackInput) {
 
   const totalRuntime = SCENES.length ? Math.max(...SCENES.map(s => s.timingEnd)) : 30;
   const totalWords = SCENES.reduce((sum, s) => sum + s.dialogue.split(/\s+/).filter(Boolean).length, 0);
+  const CTA_SCENE = SCENES.find(s => /\bcta\b|call to action/i.test(s.name)) ?? SCENES[SCENES.length - 1];
 
   const META = input
     ? {
@@ -189,6 +190,24 @@ export async function generateProductionPackDOCX(input?: ProductionPackInput) {
     children: [new TextRun({ text: `${META.scenes} scenes \u2022 ${META.cuts} cuts \u2022 ${META.words} words`, size: 18, color: C_GRAY })],
     alignment: AlignmentType.CENTER,
   }));
+  if (CTA_SCENE) {
+    children.push(new Paragraph({ text: '', spacing: { after: 120 } }));
+    children.push(new Paragraph({
+      children: [new TextRun({ text: 'FINAL CALL TO ACTION', bold: true, color: 'BE185D', size: 20 })],
+      alignment: AlignmentType.CENTER,
+      spacing: { after: 80 },
+    }));
+    children.push(new Paragraph({
+      children: [new TextRun({ text: CTA_SCENE.dialogue, bold: true, size: 22 })],
+      alignment: AlignmentType.CENTER,
+      spacing: { after: 60 },
+    }));
+    children.push(new Paragraph({
+      children: [new TextRun({ text: `${CTA_SCENE.timingStart}-${CTA_SCENE.timingEnd}s | ${CTA_SCENE.action} | On-screen: ${CTA_SCENE.visual}`, color: C_GRAY, size: 16 })],
+      alignment: AlignmentType.CENTER,
+      spacing: { after: 180 },
+    }));
+  }
   children.push(new Paragraph({ text: '', pageBreakBefore: true }));
 
   /* ═══════════════════════════════════════════════════════════════ */

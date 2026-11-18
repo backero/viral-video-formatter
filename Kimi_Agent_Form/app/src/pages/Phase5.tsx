@@ -1595,6 +1595,14 @@ export default function Phase5({ isShared = false }: Phase5Props) {
                   <div style={{ fontSize: '11px', color: '#666', fontStyle: 'italic' }}>{s.action}</div>
                 </div>
               ))}
+              {finalCtaText && (
+                <div style={{ marginTop: '24px', marginBottom: '20px', padding: '12px', border: '1px solid #DB2777', background: '#FDF2F8' }}>
+                  <div style={{ fontSize: '10px', color: '#BE185D', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>Final Call to Action</div>
+                  <div style={{ fontSize: '14px', fontWeight: 'bold', marginBottom: '4px' }}>{finalCtaText}</div>
+                  <div style={{ fontSize: '10px', color: '#666' }}>Scene {ctaScene.sceneNum} ({ctaScene.timingStart}-{ctaScene.timingEnd}s) &middot; {ctaScene.action}</div>
+                  {ctaScene.visual && <div style={{ fontSize: '10px', color: '#666', marginTop: '2px' }}>On-screen: {ctaScene.visual}</div>}
+                </div>
+              )}
               <div style={{ marginTop: '24px', paddingTop: '12px', borderTop: '1px solid #ccc', fontSize: '10px', color: '#888', textAlign: 'center' }}>
                 {activeMeta.words} words &middot; {activeMeta.scenes} scenes &middot; {activeMeta.runtime}
               </div>
